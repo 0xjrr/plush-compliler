@@ -132,82 +132,85 @@ def t_error(t):
 
 lexer = lex.lex()
 
-
-# Test
-test_small = """
-val x : int := 1;
-var y : float := 1.2;
-# This is a comment
-if (x > y) {
-    var result : string := "x is greater";
-} else {
-    val result : string := "y is greater or equal";
-}
-"""
-
-# Give the lexer some input
-lexer.input(test_small)
-
-print("\n --- Small test ---\n")
-
-# Tokenize
-while True:
-    tok = lexer.token()
-    if not tok:
-        break  # No more input
-    print(tok)
-
-test_large = """
-# Define a function to calculate the square of a number
-function square(val num : int) : int {
-    square := num * num;
-}
-
-# Define a function to check if a number is positive, negative, or zero
-function checkNumber(val x : int) : string {
-    if (x > 0) {
-        checkNumber := "positive";
-    } else if (x < 0) {
-        checkNumber := "negative";
+if __name__ == "__main__":
+        
+    # Test
+    test_small = """
+    val x : int := 1;
+    var y : float := 1.2;
+    # This is a comment
+    if (x > y) {
+        var result : string := "x is greater";
     } else {
-        checkNumber := "zero";
+        val result : string := "y is greater or equal";
     }
-}
+    """
 
-# Main program starts here
-val pi : double := 3.14159;
-var radius : double := 2.5;
-val area : double := pi * square(radius); # Calculate the area of a circle
 
-# Using a loop to count down from 5
-var counter : int := 5;
-while (counter > 0) {
-    println("Counting down: " + counter);
-    counter := counter - 1;
-}
 
-# Checking if area is greater than a threshold
-if (area > 10) {
-    println("Large circle");
-} else {
-    println("Small circle");
-}
+    test_large = """
+    # Define a function to calculate the square of a number
+    function square(val num : int) : int {
+        square := num * num;
+    }
 
-# Checking number sign
-var number : int := -42;
-val sign : string := checkNumber(number);
-println("The number is " + sign);
+    # Define a function to check if a number is positive, negative, or zero
+    function checkNumber(val x : int) : string {
+        if (x > 0) {
+            checkNumber := "positive";
+        } else if (x < 0) {
+            checkNumber := "negative";
+        } else {
+            checkNumber := "zero";
+        }
+    }
 
-"""
+    # Main program starts here
+    val pi : double := 3.14159;
+    var radius : double := 2.5;
+    val area : double := pi * square(radius); # Calculate the area of a circle
 
-# Give the lexer some input
-lexer.input(test_large)
+    # Using a loop to count down from 5
+    var counter : int := 5;
+    while (counter > 0) {
+        println("Counting down: " + counter);
+        counter := counter - 1;
+    }
 
-print("\n --- Large test ---\n")
+    # Checking if area is greater than a threshold
+    if (area > 10) {
+        println("Large circle");
+    } else {
+        println("Small circle");
+    }
 
-# Tokenize
-while True:
-    tok = lexer.token()
-    if not tok:
-        break  # No more input
-    print(tok)
+    # Checking number sign
+    var number : int := -42;
+    val sign : string := checkNumber(number);
+    println("The number is " + sign);
+
+    """
+
+    # Give the lexer some input
+    lexer.input(test_small)
+
+    print("\n --- Small test ---\n")
+
+    # Tokenize
+    while True:
+        tok = lexer.token()
+        if not tok:
+            break  # No more input
+        print(tok)
+
+    # Give the lexer some input
+    lexer.input(test_large)
+
+    print("\n --- Large test ---\n")
+
+    # Tokenize
+    while True:
+        tok = lexer.token()
+        if not tok:
+            break  # No more input
+        print(tok)
