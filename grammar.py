@@ -22,8 +22,7 @@ def p_declaration_list(p):
         p[0] = []
 
 def p_declaration(p):
-    """declaration : variable_declaration
-                   | function_declaration
+    """declaration : function_declaration
                    | statement"""
     p[0] = p[1]
 
@@ -35,8 +34,12 @@ def p_variable_declaration(p):
 
 # Function declarations
 def p_function_declaration(p):
-    "function_declaration : FUNCTION IDENTIFIER LPAREN parameter_list RPAREN COLON TYPE statement_block"
-    p[0] = ('func_decl', p[2], p[4], p[7], p[8])
+    """function_declaration : FUNCTION IDENTIFIER LPAREN parameter_list RPAREN COLON TYPE statement_block
+                            | FUNCTION MAIN LPAREN parameter_list RPAREN COLON TYPE statement_block"""
+    if p[2] == 'main':
+        p[0] = ('main', p[4], p[7], p[8])
+    else:
+        p[0] = ('func_decl', p[2], p[4], p[7], p[8])
 
 def p_parameter_list(p):
     """parameter_list : parameter_list COMMA parameter
@@ -50,8 +53,8 @@ def p_parameter_list(p):
         p[0] = []
 
 def p_parameter(p):
-    "parameter : VAL IDENTIFIER COLON TYPE"
-    p[0] = (p[1], p[2], p[4])
+    "parameter : IDENTIFIER COLON TYPE"
+    p[0] = (p[1], p[3])
 
 def p_statement_block(p):
     "statement_block : LBRACE statement_list RBRACE"
@@ -67,11 +70,17 @@ def p_statement_list(p):
 
 # Statements
 def p_statement(p):
-    """statement : if_statement
+    """statement : variable_declaration
+                 | if_statement
                  | while_statement
                  | assignment_statement
-                 | expression_statement"""
+                 | expression_statement
+                 | return_statement"""
     p[0] = p[1]
+
+def p_return_statement(p):
+    "return_statement : RETURN expression SEMICOLON"
+    p[0] = ('return', p[2])
 
 def p_if_statement(p):
     """if_statement : IF LPAREN expression RPAREN statement_block ELSE statement_block
@@ -144,12 +153,24 @@ def p_empty(p):
     pass
 
 def p_error(p):
-    print("Syntax error at '%s'" % p.value if p else "Syntax error at EOF")
+    if p:
+        print(f"Syntax error at '{p.value}', line {p.lineno}")
+    else:
+        print("Syntax error at EOF")
 
-parser = yacc.yacc(debug=True)
+parser = yacc.yacc(debug=True, debugfile="parser.out")
 
 # Example usage
 if __name__ == "__main__":
+    # test_input = """
+    # function compute(x: int, y: float): float {
+    #     val z : float := 0.0;
+    #     return x + y;
+    # }
+    # """
+    # result = parser.parse(test_input)
+    # print(result)
+
     s = """
     function test(x: int, y: float): string {
         var z : string := "hello";

@@ -36,6 +36,8 @@ tokens = [
     "COMMA",
     "ASSIGN",
     "TYPE",
+    "MAIN",
+    "RETURN",
 ]
 
 t_PLUS = r"\+"
@@ -78,6 +80,7 @@ reserved = {
     "void": "TYPE",
     "bool": "TYPE",
     "main": "MAIN",
+    "return": "RETURN",
 }
 
 
