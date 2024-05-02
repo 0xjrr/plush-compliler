@@ -77,6 +77,7 @@ reserved = {
     "double": "TYPE",
     "void": "TYPE",
     "bool": "TYPE",
+    "main": "MAIN",
 }
 
 
