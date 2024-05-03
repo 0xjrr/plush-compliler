@@ -162,15 +162,19 @@ parser = yacc.yacc(debug=True, debugfile="parser.out")
 
 # Example usage
 if __name__ == "__main__":
-    # test_input = """
-    # function compute(x: int, y: float): float {
-    #     val z : float := 0.0;
-    #     return x + y;
-    # }
-    # """
-    # result = parser.parse(test_input)
-    # print(result)
+    print("Running parser tests...")
 
+    print("Test 1")
+    test_input = """
+    function compute(x: int, y: float): float {
+        val z : float := 0.0;
+        return x + y;
+    }
+    """
+    result = parser.parse(test_input)
+    print(result)
+
+    print("Test 2")
     s = """
     function test(x: int, y: float): string {
         var z : string := "hello";
