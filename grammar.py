@@ -1,10 +1,10 @@
 import ply.yacc as yacc
-from lexer import tokens  # Make sure to import the tokens from your lexer file
+from lexer import tokens  # Import the tokens from the lexer
 
 precedence = (
     ('nonassoc', 'LT', 'GT', 'LE', 'GE', 'EQUALS', 'NE'),  # Nonassociative operators
-    ('left', 'PLUS', 'MINUS'),
-    ('left', 'TIMES', 'DIVIDE', 'MOD'),
+    ('left', 'PLUS', 'MINUS'), # Left associative operators plus and minus
+    ('left', 'TIMES', 'DIVIDE', 'MOD'), # Left associative operators times, divide, and mod
     ('right', 'NOT'),  # Right associative Unary
 )
 
@@ -194,3 +194,28 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
+
+    print("Test 3")
+    s = """
+    function test(x: int, y: float): string {
+        var z : string := "hello";
+        while (x > 0) {
+            x := x - 1;
+            z := z + "!";
+        }
+        return z;
+    }
+    """
+    result = parser.parse(s)
+    print(result)
+
+    print("Test 4")
+    s = """
+    function test(x: int, y: float): float {
+        a :=   2 * x + y;
+        b                := 3 * (x - y);
+        return x + y * 2;
+    }
+    """
+    result = parser.parse(s)
+    print(result) 
