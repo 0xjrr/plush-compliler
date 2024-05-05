@@ -1,23 +1,31 @@
 from dataclasses import dataclass, field
 from typing import List, Union
 
+Statement = Union['VariableDeclaration', 'IfStatement', 'WhileStatement', 'AssignmentStatement', 'ExpressionStatement', 'ReturnStatement']
+
 @dataclass
-class Node:
+class ASTNode:
     pass
 
 @dataclass
-class Program(Node):
-    declarations: List[Node]
+class Program(ASTNode):
+    declarations: List[ASTNode]
 
 @dataclass
-class FunctionDeclaration(Node):
+class FunctionDeclaration(ASTNode):
     name: str
     parameters: List['Parameter']
     return_type: str
     body: 'StatementBlock'
 
 @dataclass
-class VariableDeclaration(Node):
+class MainFunctionDeclaration(ASTNode):
+    parameters: List['Parameter']
+    return_type: str
+    body: 'StatementBlock'
+
+@dataclass
+class VariableDeclaration(ASTNode):
     var_type: str
     name: str
     var_kind: str  # 'val' or 'var'
@@ -25,55 +33,59 @@ class VariableDeclaration(Node):
     value: 'Expression'
 
 @dataclass
-class Parameter(Node):
+class Parameter(ASTNode):
     name: str
     type: str
 
 @dataclass
-class StatementBlock(Node):
+class StatementBlock(ASTNode):
     statements: List['Statement']
 
 @dataclass
-class IfStatement(Node):
+class IfStatement(ASTNode):
     condition: 'Expression'
     then_block: StatementBlock
     else_block: Union[StatementBlock, None]
 
 @dataclass
-class WhileStatement(Node):
+class WhileStatement(ASTNode):
     condition: 'Expression'
     body: StatementBlock
 
 @dataclass
-class AssignmentStatement(Node):
+class AssignmentStatement(ASTNode):
     target: str
     value: 'Expression'
 
 @dataclass
-class ReturnStatement(Node):
+class ReturnStatement(ASTNode):
     value: 'Expression'
 
 @dataclass
-class BinaryExpression(Node):
+class BinaryExpression(ASTNode):
     operator: str
     left: 'Expression'
     right: 'Expression'
 
 @dataclass
-class UnaryExpression(Node):
+class UnaryExpression(ASTNode):
     operator: str
     operand: 'Expression'
 
 @dataclass
-class Literal(Node):
+class Literal(ASTNode):
     value: Union[int, float, str, bool]
 
 @dataclass
-class FunctionCall(Node):
+class FunctionCall(ASTNode):
     name: str
     arguments: List['Expression']
 
 @dataclass
-class Expression(Node):
+class ExpressionStatement(ASTNode):
+    expression: 'Expression'
+
+@dataclass
+class Expression(ASTNode):
     # Placeholder for expressions literals, binary expressions, etc.
     pass
