@@ -162,6 +162,7 @@ parser = yacc.yacc(debug=True, debugfile="parser.out")
 
 # Example usage
 if __name__ == "__main__":
+    import print_tree
     print("Running parser tests...")
 
     print("Test 1")
@@ -219,3 +220,4 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result) 
+    # print_tree.display_tree(result)  
