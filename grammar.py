@@ -1,5 +1,6 @@
 import ply.yacc as yacc
 from lexer import tokens  # Import the tokens from the lexer
+import ast_nodes
 
 precedence = (
     ('nonassoc', 'LT', 'GT', 'LE', 'GE', 'EQUALS', 'NE'),  # Nonassociative operators
@@ -11,7 +12,7 @@ precedence = (
 # Program structure
 def p_program(p):
     "program : declaration_list"
-    p[0] = p[1]
+    p[0] = ast_nodes.Program(p[1])
 
 def p_declaration_list(p):
     """declaration_list : declaration_list declaration
@@ -30,16 +31,16 @@ def p_declaration(p):
 def p_variable_declaration(p):
     """variable_declaration : VAL IDENTIFIER COLON TYPE ASSIGN expression SEMICOLON
                             | VAR IDENTIFIER COLON TYPE ASSIGN expression SEMICOLON"""
-    p[0] = ('var_decl', p[1], p[2], p[4], p[6])
+    p[0] = ast_nodes.VariableDeclaration(p[1], p[2], p[4], p[6])
 
 # Function declarations
 def p_function_declaration(p):
     """function_declaration : FUNCTION IDENTIFIER LPAREN parameter_list RPAREN COLON TYPE statement_block
                             | FUNCTION MAIN LPAREN parameter_list RPAREN COLON TYPE statement_block"""
     if p[2] == 'main':
-        p[0] = ('main', p[4], p[7], p[8])
+        p[0] = ast_nodes.MainFunctionDeclaration(p[4], p[7], p[8])
     else:
-        p[0] = ('func_decl', p[2], p[4], p[7], p[8])
+        p[0] = ast_nodes.FunctionDeclaration(p[2], p[4], p[7], p[8])
 
 def p_parameter_list(p):
     """parameter_list : parameter_list COMMA parameter
@@ -73,36 +74,57 @@ def p_statement(p):
     """statement : variable_declaration
                  | if_statement
                  | while_statement
+                 | do_while_statement
                  | assignment_statement
                  | expression_statement
                  | return_statement"""
     p[0] = p[1]
 
 def p_return_statement(p):
-    "return_statement : RETURN expression SEMICOLON"
-    p[0] = ('return', p[2])
+    """return_statement : RETURN expression SEMICOLON
+                        | RETURN SEMICOLON"""
+    if len(p) == 4:
+        p[0] = ast_nodes.ReturnStatement(p[2])
+    else:
+        p[0] = ast_nodes.ReturnStatement(None)
 
 def p_if_statement(p):
     """if_statement : IF LPAREN expression RPAREN statement_block ELSE statement_block
                     | IF LPAREN expression RPAREN statement_block"""
     if len(p) == 8:
-        p[0] = ('if', p[3], p[5], p[7])
+        p[0] = ast_nodes.IfStatement(p[3], p[5], p[7])
     else:
-        p[0] = ('if', p[3], p[5], None)
+        p[0] = ast_nodes.IfStatement(p[3], p[5], None)
 
 def p_while_statement(p):
-    "while_statement : WHILE LPAREN expression RPAREN statement_block"
-    p[0] = ('while', p[3], p[5])
+    "while_statement : WHILE LPAREN expression RPAREN statement_block SEMICOLON"
+    p[0] = ast_nodes.WhileStatement(p[3], p[5])
+
+def p_do_while_statement(p):
+    "do_while_statement : DO statement_block WHILE LPAREN expression RPAREN SEMICOLON"
+    p[0] = ast_nodes.DoWhileStatement(p[5], p[2])
 
 def p_assignment_statement(p):
     "assignment_statement : IDENTIFIER ASSIGN expression SEMICOLON"
-    p[0] = ('assign', p[1], p[3])
+    p[0] = ast_nodes.AssignmentStatement(p[1], p[3])
 
 def p_expression_statement(p):
     "expression_statement : expression SEMICOLON"
-    p[0] = p[1]
+    p[0] = ast_nodes.ExpressionStatement(p[1])
+
+def p_function_call(p):
+    "function_call : IDENTIFIER LPAREN expression_list RPAREN"
+    p[0] = ('func_call', p[1], p[3])
 
 # Expressions
+def p_expression_list(p):
+    """expression_list : expression_list COMMA expression
+                       | expression"""
+    if len(p) == 4:
+        p[0] = p[1] + [p[3]]
+    else:
+        p[0] = [p[1]]
+
 def p_expression(p):
     """expression : expression PLUS expression
                   | expression MINUS expression
@@ -136,17 +158,6 @@ def p_expression(p):
     else:
         p[0] = p[1]
 
-def p_function_call(p):
-    "function_call : IDENTIFIER LPAREN expression_list RPAREN"
-    p[0] = ('func_call', p[1], p[3])
-
-def p_expression_list(p):
-    """expression_list : expression_list COMMA expression
-                       | expression"""
-    if len(p) == 4:
-        p[0] = p[1] + [p[3]]
-    else:
-        p[0] = [p[1]]
 
 def p_empty(p):
     'empty :'
@@ -179,6 +190,7 @@ if __name__ == "__main__":
     s = """
     function test(x: int, y: float): string {
         var z : string := "hello";
+        val a : int := 1;
         if (x > y) {
             z := "x is greater";
         } else {
@@ -220,4 +232,29 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result) 
-    # print_tree.display_tree(result)  
+
+    print("Test 5")
+    s = """
+    function test(x: int): void {
+        a := 0;
+        do {
+            a := a + 1;
+        } while (a < x);
+       while (a > 0) {
+            a := a - 1;
+        };
+        return;
+    }
+    """
+    result = parser.parse(s)
+    print(result) 
+
+    print("Test 6")
+
+    s = """
+    function binary_operation(x: int, y: int): int {
+        return y * 2 + x / 3; 
+    }
+    """
+    result = parser.parse(s)
+    print(result)
