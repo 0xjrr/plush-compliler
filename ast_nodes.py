@@ -26,9 +26,8 @@ class MainFunctionDeclaration(ASTNode):
 
 @dataclass
 class VariableDeclaration(ASTNode):
-    var_type: str
-    name: str
     var_kind: str  # 'val' or 'var'
+    name: str
     data_type: str
     value: 'Expression'
 
@@ -53,13 +52,18 @@ class WhileStatement(ASTNode):
     body: StatementBlock
 
 @dataclass
+class DoWhileStatement(ASTNode):
+    condition: 'Expression'
+    body: StatementBlock
+
+@dataclass
 class AssignmentStatement(ASTNode):
     target: str
     value: 'Expression'
 
 @dataclass
 class ReturnStatement(ASTNode):
-    value: 'Expression'
+    value: Union['Expression', None]
 
 @dataclass
 class BinaryExpression(ASTNode):
