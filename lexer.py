@@ -5,21 +5,25 @@ tokens = [
     "FLOAT",
     "STRING",
     "IDENTIFIER",
+    # Arithmetic operators
     "PLUS",
     "MINUS",
     "TIMES",
     "DIVIDE",
     "MOD",
+    # Parentheses and braces
     "LPAREN",
     "RPAREN",
     "LBRACE",
     "RBRACE",
+    # Comparison operators
     "EQUALS",
     "NE",
     "GE",
     "GT",
     "LE",
     "LT",
+    # Logical operators
     "AND",
     "OR",
     "NOT",
@@ -30,6 +34,7 @@ tokens = [
     "BITWISE_NOT",
     "BITWISE_LSHIFT",
     "BITWISE_RSHIFT",
+    # Keywords
     "VAL",
     "VAR",
     "FUNCTION",
@@ -39,11 +44,14 @@ tokens = [
     "DO",
     "TRUE",
     "FALSE",
+    # Punctuation
     "SEMICOLON",
     "COLON",
     "COMMA",
     "ASSIGN",
+    # Types
     "TYPE",
+    # Main and return
     "MAIN",
     "RETURN",
 ]
@@ -53,19 +61,23 @@ t_MINUS = r"-"
 t_TIMES = r"\*"
 t_DIVIDE = r"/"
 t_MOD = r"%"
+
 t_LPAREN = r"\("
 t_RPAREN = r"\)"
 t_LBRACE = r"\{"
 t_RBRACE = r"\}"
+
 t_EQUALS = r"=="
 t_NE = r"!="
 t_GE = r">="
 t_GT = r">"
 t_LE = r"<="
 t_LT = r"<"
+
 t_AND = r"&&"
 t_OR = r"\|\|"
 t_NOT = r"!"
+
 t_SEMICOLON = r";"
 t_COLON = r":"
 t_COMMA = r","
