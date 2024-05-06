@@ -6,7 +6,13 @@ precedence = (
     ('nonassoc', 'LT', 'GT', 'LE', 'GE', 'EQUALS', 'NE'),  # Nonassociative operators
     ('left', 'PLUS', 'MINUS'), # Left associative operators plus and minus
     ('left', 'TIMES', 'DIVIDE', 'MOD'), # Left associative operators times, divide, and mod
+    ('left', 'AND', 'OR'),  # Left associative logical operators
     ('right', 'NOT'),  # Right associative Unary
+    ('left', 'BITWISE_NOT'),  # Left associative bitwise NOT
+    ('left', 'BITWISE_AND'),  # Left associative bitwise AND
+    ('left', 'BITWISE_OR'),  # Left associative bitwise OR
+    ('left', 'BITWISE_XOR'),  # Left associative bitwise XOR
+    ('left', 'BITWISE_LSHIFT', 'BITWISE_RSHIFT')  # Left associative bitwise shift operators
 )
 
 # Program structure
@@ -139,6 +145,12 @@ def p_expression(p):
                   | expression NE expression
                   | expression AND expression
                   | expression OR expression
+                  | expression BITWISE_AND expression
+                  | expression BITWISE_OR expression
+                  | expression BITWISE_XOR expression
+                  | expression BITWISE_NOT expression
+                  | expression BITWISE_LSHIFT expression
+                  | expression BITWISE_RSHIFT expression
                   | LPAREN expression RPAREN
                   | NOT expression
                   | IDENTIFIER
@@ -217,7 +229,7 @@ if __name__ == "__main__":
         while (x > 0) {
             x := x - 1;
             z := z + "!";
-        }
+        };
         return z;
     }
     """
@@ -259,6 +271,20 @@ if __name__ == "__main__":
     s = """
     function binary_operation(x: int, y: int): int {
         return y * 2 + x / 3; 
+    }
+    """
+    result = parser.parse(s)
+    print(result)
+    print_tree.pretty_print(result)
+
+    print("Test 7")
+    s = """
+    function test_bitwise(x: int, y: int): int {
+        a := x << 2;
+        b := y >> 2;   
+    
+        return a & b | x ^ y;
+
     }
     """
     result = parser.parse(s)
