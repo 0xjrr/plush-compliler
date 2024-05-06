@@ -163,12 +163,20 @@ def p_expression(p):
     if len(p) == 4:
         if p[1] == '(':
             p[0] = p[2]
+        elif p[1] == 'not':
+            p[0] = ast_nodes.UnaryExpression(p[1], p[2])
         else:
             p[0] = ast_nodes.BinaryExpression(p[2], p[1], p[3])
-    elif len(p) == 3:
-        p[0] = ('not', p[2])
+    elif len(p) == 3 and p[1] == '!':
+            p[0] = ast_nodes.UnaryExpression(p[1], p[2])
     else:
-        p[0] = p[1]
+        if isinstance(p[1], str):
+            if p[1] == 'true' or p[1] == 'false':
+                p[0] = ast_nodes.Literal(p[1] == 'true')
+            else:
+                p[0] = ast_nodes.Literal(p[1])
+        else:
+            p[0] = p[1]
 
 
 def p_empty(p):
@@ -285,6 +293,18 @@ if __name__ == "__main__":
     
         return a & b | x ^ y;
 
+    }
+    """
+    result = parser.parse(s)
+    print(result)
+    print_tree.pretty_print(result)
+
+    print("Test 8")
+    s = """
+    function test_unary(x: int, y: bool): bool {
+        a := !y;
+        b := !!x;
+        return !!!!!b;
     }
     """
     result = parser.parse(s)
