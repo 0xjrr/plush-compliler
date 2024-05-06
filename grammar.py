@@ -152,7 +152,7 @@ def p_expression(p):
         if p[1] == '(':
             p[0] = p[2]
         else:
-            p[0] = (p[2], p[1], p[3])
+            p[0] = ast_nodes.BinaryExpression(p[2], p[1], p[3])
     elif len(p) == 3:
         p[0] = ('not', p[2])
     else:
@@ -185,6 +185,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(test_input)
     print(result)
+    print_tree.pretty_print(result)
 
     print("Test 2")
     s = """
@@ -207,6 +208,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
+    print_tree.pretty_print(result)
 
     print("Test 3")
     s = """
@@ -221,6 +223,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
+    print_tree.pretty_print(result)
 
     print("Test 4")
     s = """
@@ -232,6 +235,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result) 
+    print_tree.pretty_print(result)
 
     print("Test 5")
     s = """
@@ -248,6 +252,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result) 
+    print_tree.pretty_print(result)
 
     print("Test 6")
 
@@ -258,3 +263,4 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
+    print_tree.pretty_print(result)
