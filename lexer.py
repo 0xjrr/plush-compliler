@@ -23,6 +23,13 @@ tokens = [
     "AND",
     "OR",
     "NOT",
+    # Bitwise operators
+    "BITWISE_AND",
+    "BITWISE_OR",
+    "BITWISE_XOR",
+    "BITWISE_NOT",
+    "BITWISE_LSHIFT",
+    "BITWISE_RSHIFT",
     "VAL",
     "VAR",
     "FUNCTION",
@@ -63,6 +70,14 @@ t_SEMICOLON = r";"
 t_COLON = r":"
 t_COMMA = r","
 t_ASSIGN = r":="
+
+# Bitwise operators
+t_BITWISE_AND = r"&"
+t_BITWISE_OR = r"\|"
+t_BITWISE_XOR = r"\^"
+t_BITWISE_NOT = r"~"
+t_BITWISE_LSHIFT = r"<<"
+t_BITWISE_RSHIFT = r">>"
 
 # Keywords
 reserved = {
