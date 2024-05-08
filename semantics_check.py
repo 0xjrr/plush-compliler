@@ -2,7 +2,8 @@ from ast_nodes import *
 
 class TypeChecker:
     def __init__(self):
-        self.symbol_table = {}  # To store variable names and their types
+        self.symbol_table_stack = [{}]  # A stack of dictionaries for scoping
+        self.functions = {}  # Function name to function return type
         self.errors = []
 
     def check_program(self, program):
@@ -20,32 +21,40 @@ class TypeChecker:
             self.errors.append(f"Unknown declaration type: {type(declaration)}")
 
     def check_function_declaration(self, function_decl):
+        self.symbol_table_stack.append({})  # New scope for function
         # Add function parameters to symbol table
-        for param in function_decl.parameters:
-            self.symbol_table[param.name] = param.type
+        for param_name, param_type in function_decl.parameters:
+            self.symbol_table_stack[-1][param_name] = param_type
+
+        # Add function to functions dictionary
+        self.functions[function_decl.name] = function_decl.return_type
 
         # Check function body
         self.check_statement_block(function_decl.body)
+        self.symbol_table_stack.pop()  # End of function scope
 
     def check_main_function_declaration(self, main_func_decl):
+        self.symbol_table_stack.append({})  # New scope for main function
         # Main function has no parameters
         # Check function body
         self.check_statement_block(main_func_decl.body)
+        self.symbol_table_stack.pop()  # End of main function scope
 
     def check_variable_declaration(self, var_decl):
-        # Check if variable already declared
-        if var_decl.name in self.symbol_table:
-            self.errors.append(f"Variable '{var_decl.name}' already declared")
+        current_scope = self.symbol_table_stack[-1]
+        # Check if variable already declared in current scope
+        if var_decl.name in current_scope:
+            self.errors.append(f"Variable '{var_decl.name}' already declared in current scope")
             return
 
         # Add variable to symbol table
-        self.symbol_table[var_decl.name] = var_decl.data_type
+        current_scope[var_decl.name] = var_decl.data_type
 
         # Check variable initialization expression
         self.check_expression(var_decl.value)
 
     def check_statement_block(self, statement_block):
-        for statement in statement_block.statements:
+        for statement in statement_block:
             self.check_statement(statement)
 
     def check_statement(self, statement):
@@ -66,6 +75,14 @@ class TypeChecker:
         else:
             self.errors.append(f"Unknown statement type: {type(statement)}")
 
+
+    def check_variable_reference(self, name):
+        # Check variable in the nearest scope
+        for scope in reversed(self.symbol_table_stack):
+            if name in scope:
+                return
+        self.errors.append(f"Variable '{name}' not declared")
+    
     def check_if_statement(self, if_stmt):
         self.check_expression(if_stmt.condition)
         self.check_statement_block(if_stmt.then_block)
@@ -81,13 +98,20 @@ class TypeChecker:
         self.check_expression(do_while_stmt.condition)
 
     def check_assignment_statement(self, assign_stmt):
-        if assign_stmt.target not in self.symbol_table:
+        variable_type = None
+        for scope in reversed(self.symbol_table_stack):
+            if assign_stmt.target in scope:
+                variable_type = scope[assign_stmt.target]
+                break
+        if not variable_type:
             self.errors.append(f"Variable '{assign_stmt.target}' not declared")
             return
-        expected_type = self.symbol_table[assign_stmt.target]
         self.check_expression(assign_stmt.value)
+        # Assume get_expression_type() can determine the expression's type
         actual_type = self.get_expression_type(assign_stmt.value)
-        if expected_type != actual_type:
+        if actual_type == "str":
+            actual_type = "string"
+        if variable_type != actual_type:
             self.errors.append(f"Type mismatch in assignment for variable '{assign_stmt.target}'")
 
     def check_return_statement(self, return_stmt):
@@ -103,6 +127,8 @@ class TypeChecker:
             pass  # Literals have correct type
         elif isinstance(expression, FunctionCall):
             self.check_function_call(expression)
+        elif isinstance(expression, VariableReference):
+            self.check_variable_reference(expression.name)
         else:
             self.errors.append(f"Unknown expression type: {type(expression)}")
 
@@ -114,9 +140,10 @@ class TypeChecker:
         self.check_expression(unary_expr.operand)
 
     def check_function_call(self, func_call):
-        # Check if function exists
-        # Check if arguments match parameters in type and number
-        pass
+        # Check if function exists and if arguments match parameters in type and number
+        if func_call.name not in self.functions:
+            self.errors.append(f"Function '{func_call.name}' not declared")
+            return
 
     def get_expression_type(self, expression):
         if isinstance(expression, Literal):
@@ -127,15 +154,28 @@ class TypeChecker:
             return self.get_expression_type(expression.operand)
         elif isinstance(expression, FunctionCall):
             # Determine return type of function call
-            pass
-        elif isinstance(expression, Identifier):
-            return self.symbol_table.get(expression.name, None)
+            return self.functions.get(expression.name, None)
+        elif isinstance(expression, VariableReference):
+            for scope in reversed(self.symbol_table_stack):
+                if expression.name in scope:
+                    return scope[expression.name]
+            
+            # Variable not in symbol table
+            self.errors.append(f"Variable '{expression.name}' not declared, no type found")
+            return None
+        # elif isinstance(expression, Identifier):
+        #     return self.symbol_table.get(expression.name, None)
+        else:
+            self.errors.append(f"Unknown expression type: {type(expression)}, expression: {expression}")
         return None
 
 if __name__ == "__main__":
     # Test type checking
     from grammar import parser
+    import print_tree
 
+    print("Type checking test cases")
+    print("Test 1")
     type_checker = TypeChecker()
 
     test_input = """
@@ -144,10 +184,15 @@ if __name__ == "__main__":
         return x + y;
     }
     """
+    print("Test input:\n", test_input)
     result = parser.parse(test_input)
+    print("Parse result:")
+    print_tree.pretty_print(result)
     type_checker.check_program(result)
-    print("Errors:", type_checker.errors)
+    print("Typechecker Errors:\n", type_checker.errors)
 
+    print("Test 2")
+    type_checker = TypeChecker()
     s = """
     function test(x: int, y: float): string {
         var z : string := "hello";
@@ -163,11 +208,77 @@ if __name__ == "__main__":
     function main(): void {
         var x : int := 1;
         var y : float := 2.0;
-        var z : string := test(x, y);
+        var z : bool := false;
+        y := 1.0;
+        x := 2;
+        z := true;
+        var last : string := test(x, y);
     }
     """
+    print("Test input:\n", s)
     result = parser.parse(s)
+    print("Parse result:")
+    print_tree.pretty_print(result)
     type_checker.check_program(result)
-    print("Errors:", type_checker.errors)
+    print("Typecheck errors:", type_checker.errors)
 
-    # Additional test cases can be added here
+
+    print("Test 3")
+    type_checker = TypeChecker()
+    s = """
+    function test(x: int, y: float): string {
+        var z : string := "hello";
+        while (x > 0) {
+            x := x - 1;
+            z := z + "!";
+        };
+        return z;
+    }
+    """
+    print("Test input:\n", s)
+    result = parser.parse(s)
+    print("Parse result:")
+    print_tree.pretty_print(result)
+    type_checker.check_program(result)
+    print("Typecheck errors:", type_checker.errors)
+
+    print("Error tests:\n")
+
+    print("Test 4")
+    type_checker = TypeChecker()
+    s = """
+    function test(x: int, y: float): float {
+        a :=   2 * x + y;
+        b                := 3 * (x - y);
+        return x + y * 2;
+    }
+    """
+    print("Test input:\n", s)
+    result = parser.parse(s)
+    print("Parse result:")
+    print_tree.pretty_print(result)
+    type_checker.check_program(result)
+    print("Typecheck errors:", type_checker.errors)
+    print("Expected errors: ['Variable \'a\' not declared', 'Variable \'b\' not declared']")
+    
+    assert type_checker.errors == ['Variable \'a\' not declared', 'Variable \'b\' not declared']
+
+    print("Test 5")
+    type_checker = TypeChecker()
+    s = """
+    function test(x: int, y: float): float {
+        a := 1;
+        w := 2 * x + y;
+        b := 3 * (x - y);
+        val z : string := "hello";
+        z := x + y * 2;
+        z := z + 1;
+        return z;
+    }
+    """
+    print("Test input:\n", s)
+    result = parser.parse(s)
+    print("Parse result:")
+    print_tree.pretty_print(result)
+    type_checker.check_program(result)
+    print("Typecheck errors:", type_checker.errors)
