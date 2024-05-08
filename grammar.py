@@ -120,7 +120,7 @@ def p_expression_statement(p):
 
 def p_function_call(p):
     "function_call : IDENTIFIER LPAREN expression_list RPAREN"
-    p[0] = ('func_call', p[1], p[3])
+    p[0] = ast_nodes.FunctionCall(p[1], p[3])
 
 # Expressions
 def p_expression_list(p):
@@ -170,13 +170,22 @@ def p_expression(p):
     elif len(p) == 3 and p[1] == '!':
             p[0] = ast_nodes.UnaryExpression(p[1], p[2])
     else:
-        if isinstance(p[1], str):
+        if p.slice[1].type == 'IDENTIFIER':
+            p[0] = ast_nodes.VariableReference(p[1])
+            
+        elif p.slice[1].type == 'NUMBER' or p.slice[1].type == 'FLOAT' or p.slice[1].type == 'STRING' or p.slice[1].type == 'DOUBLE':
+            p[0] = ast_nodes.Literal(p[1])
+            
+        elif p.slice[1].type == 'TRUE' or p.slice[1].type == 'FALSE' or p.slice[1].type == 'BOOLEAN':
             if p[1] == 'true' or p[1] == 'false':
                 p[0] = ast_nodes.Literal(p[1] == 'true')
+                
             else:
                 p[0] = ast_nodes.Literal(p[1])
+                
         else:
             p[0] = p[1]
+            
 
 
 def p_empty(p):
@@ -304,7 +313,30 @@ if __name__ == "__main__":
     function test_unary(x: int, y: bool): bool {
         a := !y;
         b := !!x;
-        return !!!!!b;
+        return !!!!!!!!!!b == a;
+    }
+    """
+    result = parser.parse(s)
+    print(result)
+    print_tree.pretty_print(result)
+
+    print("Test 9")
+    s = """
+    function test(x: int, y: float): string {
+        var z : string := "hello";
+        val a : int := 1;
+        if (x > y) {
+            z := "x is greater";
+        } else {
+            z := "y is greater or equal";
+        }
+        return z;
+    }
+
+    function main(): void {
+        var x : int := 1;
+        var y : float := 2.0;
+        var z : string := test(x, y);
     }
     """
     result = parser.parse(s)
