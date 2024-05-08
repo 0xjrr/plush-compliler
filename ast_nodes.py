@@ -25,6 +25,11 @@ class MainFunctionDeclaration(ASTNode):
     body: 'StatementBlock'
 
 @dataclass
+class FunctionCall(ASTNode):
+    name: str
+    arguments: List['Expression']
+
+@dataclass
 class VariableDeclaration(ASTNode):
     var_kind: str  # 'val' or 'var'
     name: str
@@ -79,6 +84,10 @@ class UnaryExpression(ASTNode):
 @dataclass
 class Literal(ASTNode):
     value: Union[int, float, str, bool]
+
+@dataclass
+class VariableReference(ASTNode):
+    name: str
 
 @dataclass
 class FunctionCall(ASTNode):
