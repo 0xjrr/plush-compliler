@@ -5,6 +5,8 @@ class TypeChecker:
         self.symbol_table_stack = [{}]  # A stack of dictionaries for scoping
         self.functions = {}  # Function name to function return type
         self.errors = []
+        # validation result is a dictionary that maps expressions with their types
+        self.validation_result = {}
 
     def check_program(self, program):
         for declaration in program.declarations:
@@ -111,6 +113,9 @@ class TypeChecker:
         actual_type = self.get_expression_type(assign_stmt.value)
         if actual_type == "str":
             actual_type = "string"
+        
+        # Store result in validation_result
+        self.validation_result[f"Assignment: {assign_stmt.value}"] = actual_type
         if variable_type != actual_type:
             self.errors.append(f"Type mismatch in assignment for variable '{assign_stmt.target}'")
 
@@ -145,26 +150,55 @@ class TypeChecker:
             self.errors.append(f"Function '{func_call.name}' not declared")
             return
 
+    def are_types_compatible(self, type1, type2):
+        # Implement specific rules based on your language specifications
+        pass
+
+    def determine_common_type(self, type1, type2):
+        # Implement type coercion or common type determination logic
+        pass
+
     def get_expression_type(self, expression):
         if isinstance(expression, Literal):
-            return type(expression.value).__name__.lower()
+            computed_type = type(expression.value).__name__.lower()
+            if computed_type == "str":
+                computed_type = "string"
+            # Store result in validation_result
+            self.validation_result[f"Literal: {expression}"] = computed_type
+            return computed_type
         elif isinstance(expression, BinaryExpression):
-            return self.get_expression_type(expression.left)
+            left_type = self.get_expression_type(expression.left)
+            right_type = self.get_expression_type(expression.right)
+            
+            # Example type compatibility logic
+            if left_type == right_type:
+                result_type = left_type
+            elif self.are_types_compatible(left_type, right_type):
+                result_type = self.determine_common_type(left_type, right_type)
+            else:
+                self.errors.append(f"Type mismatch in binary expression: {left_type} and {right_type}")
+                result_type = None
+            
+            self.validation_result[f"Binary: {expression}"] = result_type
+            return result_type
         elif isinstance(expression, UnaryExpression):
             return self.get_expression_type(expression.operand)
         elif isinstance(expression, FunctionCall):
             # Determine return type of function call
-            return self.functions.get(expression.name, None)
+            computed_type = self.functions.get(expression.name, None)
+            # Store result in validation_result
+            self.validation_result[expression.__str__()] = computed_type
+            return computed_type
         elif isinstance(expression, VariableReference):
             for scope in reversed(self.symbol_table_stack):
                 if expression.name in scope:
+                    # Store result in validation_result
+                    self.validation_result[expression.__str__()] = scope[expression.name]
                     return scope[expression.name]
             
             # Variable not in symbol table
             self.errors.append(f"Variable '{expression.name}' not declared, no type found")
             return None
-        # elif isinstance(expression, Identifier):
-        #     return self.symbol_table.get(expression.name, None)
         else:
             self.errors.append(f"Unknown expression type: {type(expression)}, expression: {expression}")
         return None
@@ -282,3 +316,4 @@ if __name__ == "__main__":
     print_tree.pretty_print(result)
     type_checker.check_program(result)
     print("Typecheck errors:", type_checker.errors)
+    print(type_checker.validation_result)
