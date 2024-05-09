@@ -10,8 +10,24 @@ class TypeChecker:
         self.validation_result = {}
 
     def check_program(self, program):
+        self.check_global_variables(program.global_variables)
         for declaration in program.declarations:
             self.check_declaration(declaration)
+
+    def check_global_variables(self, globals):
+        if globals:
+            for var_decl in globals.declarations:
+                self.check_global_variable_declaration(var_decl)
+    
+    def check_global_variable_declaration(self, var_decl):
+        # Check if variable already declared in global scope
+        if var_decl.name in self.symbol_table_stack[0]:
+            self.errors.append(f"Variable '{var_decl.name}' already declared in global scope")
+            return
+        # Add variable to global scope
+        self.symbol_table_stack[0][var_decl.name] = var_decl.data_type
+
+        
 
     def check_declaration(self, declaration):
         if isinstance(declaration, FunctionDeclaration):
@@ -27,8 +43,9 @@ class TypeChecker:
         self.symbol_table_stack.append({})  # New scope for function
         self.current_function = function_decl.name
         # Add function parameters to symbol table
-        for param_name, param_type in function_decl.parameters:
-            self.symbol_table_stack[-1][param_name] = param_type
+        if function_decl.parameters and any(function_decl.parameters):
+            for param_name, param_type in function_decl.parameters:
+                self.symbol_table_stack[-1][param_name] = param_type
 
         # Add function to functions dictionary
         self.functions[function_decl.name] = function_decl.return_type
@@ -226,6 +243,24 @@ if __name__ == "__main__":
     import print_tree
     import json
 
+    print("Global variables test cases")
+    print("Test 0")
+    type_checker = TypeChecker()
+    test_input = """
+    var x : int;
+    var x : float;
+    function test(): float {
+        x := 1;
+        return 1.0;
+    }
+    """
+    print("Test input:\n", test_input)
+    result = parser.parse(test_input)
+    print("Parse result:")
+    print_tree.pretty_print(result)
+    type_checker.check_program(result)
+    print("Typecheck errors:\n", type_checker.errors)
+    print("Typecheck results:\n", json.dumps(type_checker.validation_result, indent=4))
 
     print("Type checking test cases")
     print("Test 1")
