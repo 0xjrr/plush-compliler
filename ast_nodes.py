@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Union
+from typing import List, Optional, Union
 
 Statement = Union['VariableDeclaration', 'IfStatement', 'WhileStatement', 'AssignmentStatement', 'ExpressionStatement', 'ReturnStatement']
 
@@ -9,7 +9,9 @@ class ASTNode:
 
 @dataclass
 class Program(ASTNode):
+    global_variables: 'GlobalVariables'
     declarations: List[ASTNode]
+
 
 @dataclass
 class FunctionDeclaration(ASTNode):
@@ -34,7 +36,14 @@ class VariableDeclaration(ASTNode):
     var_kind: str  # 'val' or 'var'
     name: str
     data_type: str
-    value: 'Expression'
+    value: Optional['Expression'] 
+
+@dataclass
+class GlobalVariables:
+    declarations: List[VariableDeclaration]
+
+    def __repr__(self):
+        return f"GlobalVariables({self.declarations})"
 
 @dataclass
 class Parameter(ASTNode):
