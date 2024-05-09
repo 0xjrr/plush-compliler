@@ -15,10 +15,30 @@ precedence = (
     ('left', 'BITWISE_LSHIFT', 'BITWISE_RSHIFT')  # Left associative bitwise shift operators
 )
 
-# Program structure
+
+# Update the program structure to include a list of GlobalVariables
 def p_program(p):
-    "program : declaration_list"
-    p[0] = ast_nodes.Program(p[1])
+    """program : global_declaration_list declaration_list
+               | declaration_list"""
+    # Wrap global declarations in a GlobalVariables object
+    if len(p) == 3:
+        p[0] = ast_nodes.Program(global_variables=ast_nodes.GlobalVariables(declarations=p[1]), declarations=p[2])
+    else:
+        p[0] = ast_nodes.Program(global_variables=ast_nodes.GlobalVariables(declarations=[]), declarations=p[1])
+
+def p_global_declaration_list(p):
+    """global_declaration_list : global_declaration_list global_declaration
+                               | empty"""
+    if len(p) == 3:
+        p[0] = p[1] + [p[2]]
+    else:
+        p[0] = []
+
+def p_global_declaration(p):
+    """global_declaration : VAR IDENTIFIER COLON TYPE SEMICOLON
+                          | VAL IDENTIFIER COLON TYPE SEMICOLON"""
+    # No initial value is provided, so value is None
+    p[0] = ast_nodes.VariableDeclaration(var_kind=p[1], name=p[2], data_type=p[4], value=None)
 
 def p_declaration_list(p):
     """declaration_list : declaration_list declaration
@@ -337,6 +357,23 @@ if __name__ == "__main__":
         var x : int := 1;
         var y : float := 2.0;
         var z : string := test(x, y);
+    }
+    """
+    result = parser.parse(s)
+    print(result)
+    print_tree.pretty_print(result)
+
+    print("Test 10")
+    s = """
+    val x : int;
+    var y : float;
+    function main(): float {
+        x := 100;
+        while (x > 0) {
+            x := x - 1;
+            y := y + 1.0;
+        };
+        return y;
     }
     """
     result = parser.parse(s)
