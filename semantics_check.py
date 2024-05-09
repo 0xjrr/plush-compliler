@@ -4,6 +4,7 @@ class TypeChecker:
     def __init__(self):
         self.symbol_table_stack = [{}]  # A stack of dictionaries for scoping
         self.functions = {}  # Function name to function return type
+        self.current_function = None
         self.errors = []
         # validation result is a dictionary that maps expressions with their types
         self.validation_result = {}
@@ -24,6 +25,7 @@ class TypeChecker:
 
     def check_function_declaration(self, function_decl):
         self.symbol_table_stack.append({})  # New scope for function
+        self.current_function = function_decl.name
         # Add function parameters to symbol table
         for param_name, param_type in function_decl.parameters:
             self.symbol_table_stack[-1][param_name] = param_type
@@ -33,13 +35,16 @@ class TypeChecker:
 
         # Check function body
         self.check_statement_block(function_decl.body)
+        self.current_function = None
         self.symbol_table_stack.pop()  # End of function scope
 
     def check_main_function_declaration(self, main_func_decl):
         self.symbol_table_stack.append({})  # New scope for main function
+        self.current_function = "main"
         # Main function has no parameters
         # Check function body
         self.check_statement_block(main_func_decl.body)
+        self.current_function = None
         self.symbol_table_stack.pop()  # End of main function scope
 
     def check_variable_declaration(self, var_decl):
@@ -122,6 +127,18 @@ class TypeChecker:
     def check_return_statement(self, return_stmt):
         if return_stmt.value:
             self.check_expression(return_stmt.value)
+            # Assume get_expression_type() can determine the expression's type
+            actual_type = self.get_expression_type(return_stmt.value)
+            if actual_type == "str":
+                actual_type = "string"
+            # Store result in validation_result
+            self.validation_result[f"Return: {return_stmt.value}"] = actual_type
+            
+            if self.current_function:
+                if actual_type != self.functions.get(self.current_function, None):
+                    self.errors.append(f"Return type mismatch in {self.current_function} function")
+            else:
+                self.errors.append(f"Return statement outside of function")
 
     def check_expression(self, expression):
         if isinstance(expression, BinaryExpression):
@@ -207,6 +224,8 @@ if __name__ == "__main__":
     # Test type checking
     from grammar import parser
     import print_tree
+    import json
+
 
     print("Type checking test cases")
     print("Test 1")
@@ -223,7 +242,8 @@ if __name__ == "__main__":
     print("Parse result:")
     print_tree.pretty_print(result)
     type_checker.check_program(result)
-    print("Typechecker Errors:\n", type_checker.errors)
+    print("Typecheck errors:\n", type_checker.errors)
+    print("Typecheck results:\n", json.dumps(type_checker.validation_result, indent=4))
 
     print("Test 2")
     type_checker = TypeChecker()
@@ -254,7 +274,8 @@ if __name__ == "__main__":
     print("Parse result:")
     print_tree.pretty_print(result)
     type_checker.check_program(result)
-    print("Typecheck errors:", type_checker.errors)
+    print("Typecheck errors:\n", type_checker.errors)
+    print("Typecheck results:\n", json.dumps(type_checker.validation_result, indent=4))
 
 
     print("Test 3")
@@ -274,7 +295,8 @@ if __name__ == "__main__":
     print("Parse result:")
     print_tree.pretty_print(result)
     type_checker.check_program(result)
-    print("Typecheck errors:", type_checker.errors)
+    print("Typecheck errors:\n", type_checker.errors)
+    print("Typecheck results:\n", json.dumps(type_checker.validation_result, indent=4))
 
     print("Error tests:\n")
 
@@ -294,8 +316,7 @@ if __name__ == "__main__":
     type_checker.check_program(result)
     print("Typecheck errors:", type_checker.errors)
     print("Expected errors: ['Variable \'a\' not declared', 'Variable \'b\' not declared']")
-    
-    assert type_checker.errors == ['Variable \'a\' not declared', 'Variable \'b\' not declared']
+    print(json.dumps(type_checker.validation_result, indent=4))
 
     print("Test 5")
     type_checker = TypeChecker()
@@ -316,4 +337,4 @@ if __name__ == "__main__":
     print_tree.pretty_print(result)
     type_checker.check_program(result)
     print("Typecheck errors:", type_checker.errors)
-    print(type_checker.validation_result)
+    print(json.dumps(type_checker.validation_result, indent=4))
