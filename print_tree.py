@@ -6,6 +6,9 @@ def pretty_print(node, indent=0):
     """
     if isinstance(node, ast_nodes.Program):
         print("Program(")
+        print("  " * (indent + 1) + "global_variables =", end=" ")
+        pretty_print(node.global_variables, indent + 1)
+        print("  " * (indent + 1) + "Program declarations = [")
         pretty_print(node.declarations, indent + 1)
         print(")")
     elif isinstance(node, list):
