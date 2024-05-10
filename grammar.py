@@ -35,10 +35,8 @@ def p_global_declaration_list(p):
         p[0] = []
 
 def p_global_declaration(p):
-    """global_declaration : VAR IDENTIFIER COLON TYPE SEMICOLON
-                          | VAL IDENTIFIER COLON TYPE SEMICOLON"""
-    # No initial value is provided, so value is None
-    p[0] = ast_nodes.VariableDeclaration(var_kind=p[1], name=p[2], data_type=p[4], value=None)
+    """global_declaration : variable_declaration"""
+    p[0] = p[1]
 
 def p_declaration_list(p):
     """declaration_list : declaration_list declaration
@@ -56,8 +54,12 @@ def p_declaration(p):
 # Variable declarations
 def p_variable_declaration(p):
     """variable_declaration : VAL IDENTIFIER COLON TYPE ASSIGN expression SEMICOLON
-                            | VAR IDENTIFIER COLON TYPE ASSIGN expression SEMICOLON"""
-    p[0] = ast_nodes.VariableDeclaration(p[1], p[2], p[4], p[6])
+                            | VAR IDENTIFIER COLON TYPE ASSIGN expression SEMICOLON
+                            | VAR IDENTIFIER COLON TYPE SEMICOLON"""
+    if len(p) == 8:
+        p[0] = ast_nodes.VariableDeclaration(p[1], p[2], p[4], p[6])
+    else:
+        p[0] = ast_nodes.VariableDeclaration(p[1], p[2], p[4], None)
 
 # Function declarations
 def p_function_declaration(p):
@@ -365,7 +367,7 @@ if __name__ == "__main__":
 
     print("Test 10")
     s = """
-    val x : int;
+    val x : int := 100;
     var y : float;
     function main(): float {
         x := 100;
