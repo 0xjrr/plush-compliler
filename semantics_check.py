@@ -2,7 +2,7 @@ from ast_nodes import *
 
 class TypeChecker:
     def __init__(self):
-        self.symbol_table_stack = [{}]  # A stack of dictionaries for scoping
+        self.symbol_table_stack = [{'immutable_vars':[]}]  # A stack of dictionaries for scoping
         self.functions = {}  # Function name to function return type
         self.current_function = None
         self.errors = []
@@ -32,7 +32,7 @@ class TypeChecker:
                 self.errors.append(f"Constant variable '{var_decl.name}' must be initialized")
                 return
             self.check_expression(var_decl.value)
-            self.symbol_table_stack[0]["immutable_vars"] = self.symbol_table_stack[0].get("immutable_vars", []).append([var_decl.name])
+            self.symbol_table_stack[0].get("immutable_vars", []).append(var_decl.name)
         else:
             if var_decl.value:
                 self.check_expression(var_decl.value)
@@ -51,7 +51,7 @@ class TypeChecker:
             self.errors.append(f"Unknown declaration type: {type(declaration)}")
 
     def check_function_declaration(self, function_decl):
-        self.symbol_table_stack.append({})  # New scope for function
+        self.symbol_table_stack.append({'immutable_vars':[]})  # New scope for function
         self.current_function = function_decl.name
         # Add function parameters to symbol table
         if function_decl.parameters and any(function_decl.parameters):
@@ -67,7 +67,7 @@ class TypeChecker:
         self.symbol_table_stack.pop()  # End of function scope
 
     def check_main_function_declaration(self, main_func_decl):
-        self.symbol_table_stack.append({})  # New scope for main function
+        self.symbol_table_stack.append({'immutable_vars':[]})  # New scope for main function
         self.current_function = "main"
         # Main function has no parameters
         # Check function body
@@ -76,15 +76,29 @@ class TypeChecker:
         self.symbol_table_stack.pop()  # End of main function scope
 
     def check_variable_declaration(self, var_decl):
-        current_scope = self.symbol_table_stack[-1]
+        # Check if variable already declared in global scope
+        global_scope = self.symbol_table_stack[0]
+        if var_decl.name in global_scope:
+            self.errors.append(f"Variable '{var_decl.name}' already declared in global scope")
+            return
+        
         # Check if variable already declared in current scope
+        current_scope = self.symbol_table_stack[-1]
         if var_decl.name in current_scope:
             self.errors.append(f"Variable '{var_decl.name}' already declared in current scope")
             return
 
         # Add variable to symbol table
-        current_scope[var_decl.name] = var_decl.data_type
+        self.symbol_table_stack[-1][var_decl.name] = var_decl.data_type
 
+        # Check variable initialization kind
+        if var_decl.var_kind == "val":
+            if not var_decl.value:
+                self.errors.append(f"Constant variable '{var_decl.name}' must be initialized")
+                return
+            self.check_expression(var_decl.value)
+            self.symbol_table_stack[-1].get("immutable_vars", []).append(var_decl.name)
+        
         # Check variable initialization expression
         self.check_expression(var_decl.value)
 
@@ -134,13 +148,19 @@ class TypeChecker:
 
     def check_assignment_statement(self, assign_stmt):
         variable_type = None
+        # Check if variable is declared
         for scope in reversed(self.symbol_table_stack):
             if assign_stmt.target in scope:
+                # Check variable kind
+                if assign_stmt.target in scope.get("immutable_vars", []):
+                    self.errors.append(f"Cannot assign to constant variable '{assign_stmt.target}'")
+                    return
                 variable_type = scope[assign_stmt.target]
                 break
         if not variable_type:
             self.errors.append(f"Variable '{assign_stmt.target}' not declared")
             return
+        
         self.check_expression(assign_stmt.value)
         # Assume get_expression_type() can determine the expression's type
         actual_type = self.get_expression_type(assign_stmt.value)
