@@ -26,6 +26,17 @@ class TypeChecker:
             return
         # Add variable to global scope
         self.symbol_table_stack[0][var_decl.name] = var_decl.data_type
+        # Check variable initialization kind
+        if var_decl.var_kind == "val":
+            if not var_decl.value:
+                self.errors.append(f"Constant variable '{var_decl.name}' must be initialized")
+                return
+            self.check_expression(var_decl.value)
+            self.symbol_table_stack[0]["immutable_vars"] = self.symbol_table_stack[0].get("immutable_vars", []).append([var_decl.name])
+        else:
+            if var_decl.value:
+                self.check_expression(var_decl.value)
+        
 
         
 
