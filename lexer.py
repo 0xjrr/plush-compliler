@@ -16,6 +16,9 @@ tokens = [
     "RPAREN",
     "LBRACE",
     "RBRACE",
+    # Brackets
+    "LBRACKET",  # Left square bracket
+    "RBRACKET",  # Right square bracket
     # Comparison operators
     "EQUALS",
     "NE",
@@ -66,6 +69,9 @@ t_LPAREN = r"\("
 t_RPAREN = r"\)"
 t_LBRACE = r"\{"
 t_RBRACE = r"\}"
+
+t_LBRACKET = r'\['
+t_RBRACKET = r'\]'
 
 t_EQUALS = r"=="
 t_NE = r"!="
