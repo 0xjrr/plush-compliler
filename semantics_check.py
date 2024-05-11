@@ -404,3 +404,36 @@ if __name__ == "__main__":
     type_checker.check_program(result)
     print("Typecheck errors:", type_checker.errors)
     print(json.dumps(type_checker.validation_result, indent=4))
+
+    print("Fully Correct Program")
+    print("Test 6")
+    type_checker = TypeChecker()
+    s = """
+    val x : int := 1;
+    var y : float := 1.2;
+    # This is a comment
+    function test(z: int, w: float): float {
+        var k: int := z;
+        while (k > x) {
+            k := k - 1;
+            y := y + w;
+        };
+        return y;
+    }
+    function main(): void {
+        var a: int := 2;
+        var b: float := 3.0;
+        var c: float := test(a, b);
+    }
+    """
+    print("Test input:\n", s)
+    result = parser.parse(s)
+    print("Parse normal result:")
+    print(result)
+    print("Parse result:")
+    print_tree.pretty_print(result)
+    type_checker.check_program(result)
+    print("Typecheck errors:", type_checker.errors)
+    print("Typecheck results:\n", json.dumps(type_checker.validation_result, indent=4))
+
+    
