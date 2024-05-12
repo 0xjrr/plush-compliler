@@ -418,8 +418,17 @@ if __name__ == "__main__":
             k := k - 1;
             y := y + w;
         };
-        return y;
+        if (k == 0) {
+            return y;
+        } 
+        if (k == 1) {
+            return y + 1.0;
+        } else {
+            w := w + y;
+        }
+        return w;
     }
+
     function main(): void {
         var a: int := 2;
         var b: float := 3.0;
