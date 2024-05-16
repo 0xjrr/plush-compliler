@@ -445,4 +445,56 @@ if __name__ == "__main__":
     print("Typecheck errors:", type_checker.errors)
     print("Typecheck results:\n", json.dumps(type_checker.validation_result, indent=4))
 
+    print("Test 7")
+    type_checker = TypeChecker()
+    s = """
+    val x : int := 1;
+    function main(): void {
+        var a: int := 2;
+        if (a > x) {
+            a := a + 1;
+        } else {
+            a := a - 1;
+        }
+        return;
+    }
+    """
+    print("Test input:\n", s)
+    result = parser.parse(s)
+    print("Parse normal result:")
+    print(result)
+    print("Parse result:")
+    print_tree.pretty_print(result)
+    type_checker.check_program(result)
+    print("Typecheck errors:", type_checker.errors)
+    print("Typecheck results:\n", json.dumps(type_checker.validation_result, indent=4))
+
+    print("Test 8")
+    type_checker = TypeChecker()
+    s = """
+    val x : int := 1;
+    val y : float := 2.0;
+    function test(a: int, b: float): float {
+        if (a > x) {
+            return y+x;
+        } else {
+            return y-x;
+        }
+    }
+    function main(): void {
+        var a: int := 2;
+        var b: float := 3.0;
+        var c: float := test(a, b);
+    }
+    """
+    print("Test input:\n", s)
+    result = parser.parse(s)
+    print("Parse normal result:")
+    print(result)
+    print("Parse result:")
+    print_tree.pretty_print(result)
+    type_checker.check_program(result)
+    print("Typecheck errors:", type_checker.errors)
+    print("Typecheck results:\n", json.dumps(type_checker.validation_result, indent=4))
+
     
