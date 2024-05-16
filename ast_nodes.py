@@ -39,8 +39,15 @@ class VariableDeclaration(ASTNode):
     value: Optional['Expression'] 
 
 @dataclass
+class ArrayDeclaration(ASTNode):
+    var_kind: str  # 'var'
+    name: str
+    data_type: str
+    size: int
+
+@dataclass
 class GlobalVariables:
-    declarations: List[VariableDeclaration]
+    declarations: List[Union['VariableDeclaration', 'ArrayDeclaration']]
 
     def __repr__(self):
         return f"GlobalVariables({self.declarations})"
@@ -76,6 +83,12 @@ class AssignmentStatement(ASTNode):
     value: 'Expression'
 
 @dataclass
+class ArrayAssignmentStatement(ASTNode):
+    target: str
+    index: 'Expression'
+    value: 'Expression'
+
+@dataclass
 class ReturnStatement(ASTNode):
     value: Union['Expression', None]
 
@@ -106,6 +119,11 @@ class FunctionCall(ASTNode):
 @dataclass
 class ExpressionStatement(ASTNode):
     expression: 'Expression'
+
+@dataclass
+class ArrayAccess(ASTNode):
+    name: str
+    index: 'Expression'
 
 @dataclass
 class Expression(ASTNode):
