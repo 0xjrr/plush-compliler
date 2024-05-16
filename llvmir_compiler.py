@@ -58,7 +58,7 @@ class LLVMIRGenerator:
         self.output.append("    " * self.indentation + line)
 
     def generate(self):
-        self.emit("; ModuleID = 'my_program'")
+        # self.emit("; ModuleID = 'my_program'")
         self.emit("declare dso_local i32 @printf(i8*, ...)")
         self.emit("declare dso_local i32 @scanf(i8*, ...)")
         self.emit("")
@@ -147,6 +147,8 @@ class LLVMIRGenerator:
             self.emit(f"{tmp_var} = load {var_type}, {var_type}* @{var_name}, align 4")
         elif var_name.startswith("x"):
             self.emit(f"{tmp_var} = load {var_type}, {var_type}* %{var_name}, align 4")
+        elif var_name.startswith("p"):
+            return (var_type, f"%{var_name}")
         else:
             self.emit(f"{tmp_var} = alloca {var_type}, align 4")
             self.emit(f"store {var_type} %{var_name}, {var_type}* {tmp_var}, align 4")
@@ -281,51 +283,7 @@ class LLVMIRGenerator:
                 self.visit(node.right),
             )
         )
-
-        # Handle type promotion
-        if left_type == "float" and right_type == "double":
-            # Promote left to double
-            tmp_var = f"%tmp{self.temp_count}"
-            self.temp_count += 1
-            self.emit(f"{tmp_var} = fpext float {left} to double")
-            left = tmp_var
-            left_type = "double"
-        elif left_type == "double" and right_type == "float":
-            # Promote right to double
-            tmp_var = f"%tmp{self.temp_count}"
-            self.temp_count += 1
-            self.emit(f"{tmp_var} = fpext float {right} to double")
-            right = tmp_var
-            right_type = "double"
-        elif left_type == "i32" and right_type == "double":
-            # Promote left to double
-            tmp_var = f"%tmp{self.temp_count}"
-            self.temp_count += 1
-            self.emit(f"{tmp_var} = sitofp i32 {left} to double")
-            left = tmp_var
-            left_type = "double"
-        elif left_type == "double" and right_type == "i32":
-            # Promote right to double
-            tmp_var = f"%tmp{self.temp_count}"
-            self.temp_count += 1
-            self.emit(f"{tmp_var} = sitofp i32 {right} to double")
-            right = tmp_var
-            right_type = "double"
-        elif left_type == "i32" and right_type == "float":
-            # Promote left to float
-            tmp_var = f"%tmp{self.temp_count}"
-            self.temp_count += 1
-            self.emit(f"{tmp_var} = sitofp i32 {left} to float")
-            left = tmp_var
-            left_type = "float"
-        elif left_type == "float" and right_type == "i32":
-            # Promote right to float
-            tmp_var = f"%tmp{self.temp_count}"
-            self.temp_count += 1
-            self.emit(f"{tmp_var} = sitofp i32 {right} to float")
-            right = tmp_var
-            right_type = "float"
-
+        
         if isinstance(left, tuple):
             left_var_type, left_var_name = left  # Reference Unpack tuple
         else:
@@ -335,6 +293,51 @@ class LLVMIRGenerator:
             right_var_type, right_var_name = right  # Reference Unpack tuple
         else:
             right_var_type, right_var_name = right_type, right  # Is literal
+
+        # Handle type promotion
+        if left_type == "float" and right_type == "double":
+            # Promote left to double
+            tmp_var = f"%tmp{self.temp_count}"
+            self.temp_count += 1
+            self.emit(f"{tmp_var} = fpext float {left_var_name} to double")
+            left_var_name = tmp_var
+            left_type = "double"
+        elif left_type == "double" and right_type == "float":
+            # Promote right to double
+            tmp_var = f"%tmp{self.temp_count}"
+            self.temp_count += 1
+            self.emit(f"{tmp_var} = fpext float {right_var_name} to double")
+            right_var_name = tmp_var
+            right_type = "double"
+        elif left_type == "i32" and right_type == "double":
+            # Promote left to double
+            tmp_var = f"%tmp{self.temp_count}"
+            self.temp_count += 1
+            self.emit(f"{tmp_var} = sitofp i32 {left_var_name} to double")
+            left_var_name = tmp_var
+            left_type = "double"
+        elif left_type == "double" and right_type == "i32":
+            # Promote right to double
+            tmp_var = f"%tmp{self.temp_count}"
+            self.temp_count += 1
+            self.emit(f"{tmp_var} = sitofp i32 {right_var_name} to double")
+            right_var_name = tmp_var
+            right_type = "double"
+        elif left_type == "i32" and right_type == "float":
+            # Promote left to float
+            tmp_var = f"%tmp{self.temp_count}"
+            self.temp_count += 1
+            self.emit(f"{tmp_var} = sitofp i32 {left_var_name} to float")
+            left_var_name = tmp_var
+            left_type = "float"
+        elif left_type == "float" and right_type == "i32":
+            # Promote right to float
+            tmp_var = f"%tmp{self.temp_count}"
+            self.temp_count += 1
+            self.emit(f"{tmp_var} = sitofp i32 {right_var_name} to float")
+            right_var_name = tmp_var
+            right_type = "float"
+
 
         if left_type != right_type:
             raise Exception(
@@ -399,7 +402,7 @@ class LLVMIRGenerator:
         }.get(type_str, "void")
 
 
-ast = Program(
+'''ast = Program(
     global_variables=GlobalVariables(
         [
             VariableDeclaration(
@@ -446,7 +449,82 @@ ast = Program(
             ],
         )
     ],
+)'''
+
+ast = Program(
+    global_variables=GlobalVariables(
+        [
+            VariableDeclaration(
+                var_kind="val", name="x", data_type="int", value=Literal(value=1)
+            ),
+            VariableDeclaration(
+                var_kind="val", name="y", data_type="float", value=Literal(value=2.0)
+            ),
+        ]
+    ),
+    declarations=[
+        FunctionDeclaration(
+            name="test",
+            parameters=[("a", "int"), ("b", "float")],
+            return_type="float",
+            body=[
+                IfStatement(
+                    condition=BinaryExpression(
+                        operator=">",
+                        left=VariableReference(name="a"),
+                        right=VariableReference(name="x"),
+                    ),
+                    then_block=[
+                        ReturnStatement(
+                            value=BinaryExpression(
+                                operator="+",
+                                left=VariableReference(name="y"),
+                                right=VariableReference(name="x"),
+                            )
+                        )
+                    ],
+                    else_block=[
+                        ReturnStatement(
+                            value=BinaryExpression(
+                                operator="-",
+                                left=VariableReference(name="y"),
+                                right=VariableReference(name="x"),
+                            )
+                        )
+                    ],
+                )
+            ],
+        ),
+        MainFunctionDeclaration(
+            parameters=[None],
+            return_type="void",
+            body=[
+                VariableDeclaration(
+                    var_kind="var", name="a", data_type="int", value=Literal(value=2)
+                ),
+                VariableDeclaration(
+                    var_kind="var",
+                    name="b",
+                    data_type="float",
+                    value=Literal(value=3.0),
+                ),
+                VariableDeclaration(
+                    var_kind="var",
+                    name="c",
+                    data_type="float",
+                    value=FunctionCall(
+                        name="test",
+                        arguments=[
+                            VariableReference(name="a"),
+                            VariableReference(name="b"),
+                        ],
+                    ),
+                ),
+            ],
+        ),
+    ],
 )
+
 # Test the LLVMIRGenerator
 '''ast = Program(
     global_variables=GlobalVariables(
