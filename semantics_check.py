@@ -41,9 +41,9 @@ class TypeChecker:
         
 
     def check_declaration(self, declaration):
-        if isinstance(declaration, FunctionDeclaration):
+        if isinstance(declaration, FunctionStatement):
             self.check_function_declaration(declaration)
-        elif isinstance(declaration, MainFunctionDeclaration):
+        elif isinstance(declaration, MainFunctionStatement):
             self.check_main_function_declaration(declaration)
         elif isinstance(declaration, VariableDeclaration):
             self.check_variable_declaration(declaration)
@@ -217,7 +217,14 @@ class TypeChecker:
 
     def are_types_compatible(self, type1, type2):
         # Implement specific rules based on your language specifications
-        pass
+        if type1 == type2:
+            return True
+        
+        if type1 in ["int", "float", "double"] and type2 in ["int", "float", "double"]:
+            return True
+        
+        return False
+        
 
     def determine_common_type(self, type1, type2):
         # Implement type coercion or common type determination logic
@@ -497,4 +504,48 @@ if __name__ == "__main__":
     print("Typecheck errors:", type_checker.errors)
     print("Typecheck results:\n", json.dumps(type_checker.validation_result, indent=4))
 
-    
+
+    print("Test 9")
+    type_checker = TypeChecker()
+    # int a = 10;
+
+    # double test(int x) {
+    #     int b = a;
+    #     int c = a;
+    #     int y = x;
+    #     a = 20;
+    #     b += 10;
+    #     return b;
+    # }
+
+    # int main() {
+    #     printf("%f\n", test(10));
+    #     double f = test(a);
+    #     printf("%f\n",f);
+    #     return 0;
+    # }
+    s = """
+    var a : int := 10;
+    function test(x: int): float {
+        var b: int := a;
+        var c: int := a;
+        var y: int := x;
+        a := 20 + x;
+        b := b + 10;
+        return b;
+    }
+    function main(): int {
+        var f: float := test(11);
+        var g: float := test(a);
+        return 0;
+    }
+    """
+    print("Test input:\n", s)
+    result = parser.parse(s)
+    print("Parse normal result:")
+    print(result)
+    print("Parse result:")
+    print_tree.pretty_print(result)
+    type_checker.check_program(result)
+    print("Typecheck errors:", type_checker.errors)
+    print("Typecheck results:\n", json.dumps(type_checker.validation_result, indent=4))
