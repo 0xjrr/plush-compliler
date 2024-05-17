@@ -1,27 +1,33 @@
 from dataclasses import dataclass, field
 from typing import List, Optional, Union
 
-Statement = Union['VariableDeclaration', 'IfStatement', 'WhileStatement', 'AssignmentStatement', 'ExpressionStatement', 'ReturnStatement']
+# Define the union for different types of statements
+Statement = Union[
+    'VariableDeclaration', 'ArrayDeclaration', 'IfStatement', 'WhileStatement', 
+    'DoWhileStatement', 'AssignmentStatement', 'ArrayAssignmentStatement', 
+    'ExpressionStatement', 'ReturnStatement'
+]
 
+# Base class for AST nodes
 @dataclass
 class ASTNode:
     pass
 
+# Program structure to include global variables and function declarations
 @dataclass
 class Program(ASTNode):
     global_variables: 'GlobalVariables'
     declarations: List[ASTNode]
 
-
 @dataclass
-class FunctionDeclaration(ASTNode):
+class FunctionStatement(ASTNode):
     name: str
     parameters: List['Parameter']
     return_type: str
     body: 'StatementBlock'
 
 @dataclass
-class MainFunctionDeclaration(ASTNode):
+class MainFunctionStatement(ASTNode):
     parameters: List['Parameter']
     return_type: str
     body: 'StatementBlock'
@@ -36,14 +42,15 @@ class VariableDeclaration(ASTNode):
     var_kind: str  # 'val' or 'var'
     name: str
     data_type: str
-    value: Optional['Expression'] 
+    value: Optional['Expression']
 
+# New class for array declarations
 @dataclass
 class ArrayDeclaration(ASTNode):
     var_kind: str  # 'var'
     name: str
-    data_type: str
-    size: int
+    data_type: List[str]  # Nested types for multi-dimensional arrays
+    value: List['Expression']
 
 @dataclass
 class GlobalVariables:
@@ -65,7 +72,7 @@ class StatementBlock(ASTNode):
 class IfStatement(ASTNode):
     condition: 'Expression'
     then_block: StatementBlock
-    else_block: Union[StatementBlock, None]
+    else_block: Optional[StatementBlock]
 
 @dataclass
 class WhileStatement(ASTNode):
@@ -82,6 +89,7 @@ class AssignmentStatement(ASTNode):
     target: str
     value: 'Expression'
 
+# New class for array assignments
 @dataclass
 class ArrayAssignmentStatement(ASTNode):
     target: str
@@ -90,7 +98,7 @@ class ArrayAssignmentStatement(ASTNode):
 
 @dataclass
 class ReturnStatement(ASTNode):
-    value: Union['Expression', None]
+    value: Optional['Expression']
 
 @dataclass
 class BinaryExpression(ASTNode):
@@ -120,6 +128,7 @@ class FunctionCall(ASTNode):
 class ExpressionStatement(ASTNode):
     expression: 'Expression'
 
+# New class for array access
 @dataclass
 class ArrayAccess(ASTNode):
     name: str
@@ -127,5 +136,4 @@ class ArrayAccess(ASTNode):
 
 @dataclass
 class Expression(ASTNode):
-    # Placeholder for expressions literals, binary expressions, etc.
     pass
