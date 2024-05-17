@@ -15,7 +15,6 @@ precedence = (
     ('left', 'BITWISE_LSHIFT', 'BITWISE_RSHIFT')  # Left associative bitwise shift operators
 )
 
-
 # Update the program structure to include a list of GlobalVariables
 def p_program(p):
     """program : global_declaration_list declaration_list
@@ -55,20 +54,43 @@ def p_declaration(p):
 def p_variable_declaration(p):
     """variable_declaration : VAL IDENTIFIER COLON TYPE ASSIGN expression SEMICOLON
                             | VAR IDENTIFIER COLON TYPE ASSIGN expression SEMICOLON
-                            | VAR IDENTIFIER COLON TYPE SEMICOLON"""
-    if len(p) == 8:
+                            | VAR IDENTIFIER COLON TYPE SEMICOLON
+                            | VAR IDENTIFIER COLON array_type ASSIGN array_initializer SEMICOLON"""
+    if len(p) == 8 and isinstance(p[4], list):
+        p[0] = ast_nodes.ArrayDeclaration(p[1], p[2], p[4], p[6])
+    elif len(p) == 8:
         p[0] = ast_nodes.VariableDeclaration(p[1], p[2], p[4], p[6])
     else:
         p[0] = ast_nodes.VariableDeclaration(p[1], p[2], p[4], None)
 
-# Function declarations
+def p_array_type(p):
+    """array_type : LBRACKET TYPE RBRACKET
+                  | LBRACKET array_type RBRACKET"""
+    if p[2] in ['int', 'double']:
+        p[0] = [p[2]]
+    else:
+        p[0] = [p[2]]
+
+def p_array_initializer(p):
+    """array_initializer : LBRACKET expression_list RBRACKET
+                         | LBRACKET array_initializer_list RBRACKET"""
+    p[0] = p[2]
+
+def p_array_initializer_list(p):
+    """array_initializer_list : array_initializer_list COMMA array_initializer
+                              | array_initializer"""
+    if len(p) == 4:
+        p[0] = p[1] + [p[3]]
+    else:
+        p[0] = [p[1]]
+
 def p_function_declaration(p):
     """function_declaration : FUNCTION IDENTIFIER LPAREN parameter_list RPAREN COLON TYPE statement_block
                             | FUNCTION MAIN LPAREN parameter_list RPAREN COLON TYPE statement_block"""
     if p[2] == 'main':
-        p[0] = ast_nodes.MainFunctionDeclaration(p[4], p[7], p[8])
+        p[0] = ast_nodes.MainFunctionStatement(p[4], p[7], p[8])
     else:
-        p[0] = ast_nodes.FunctionDeclaration(p[2], p[4], p[7], p[8])
+        p[0] = ast_nodes.FunctionStatement(p[2], p[4], p[7], p[8])
 
 def p_parameter_list(p):
     """parameter_list : parameter_list COMMA parameter
@@ -104,6 +126,7 @@ def p_statement(p):
                  | while_statement
                  | do_while_statement
                  | assignment_statement
+                 | array_assignment_statement
                  | expression_statement
                  | return_statement"""
     p[0] = p[1]
@@ -135,6 +158,10 @@ def p_do_while_statement(p):
 def p_assignment_statement(p):
     "assignment_statement : IDENTIFIER ASSIGN expression SEMICOLON"
     p[0] = ast_nodes.AssignmentStatement(p[1], p[3])
+
+def p_array_assignment_statement(p):
+    "array_assignment_statement : IDENTIFIER LBRACKET expression RBRACKET ASSIGN expression SEMICOLON"
+    p[0] = ast_nodes.ArrayAssignmentStatement(p[1], p[3], p[6])
 
 def p_expression_statement(p):
     "expression_statement : expression SEMICOLON"
@@ -176,6 +203,7 @@ def p_expression(p):
                   | LPAREN expression RPAREN
                   | NOT expression
                   | IDENTIFIER
+                  | IDENTIFIER LBRACKET expression RBRACKET
                   | NUMBER
                   | FLOAT
                   | STRING
@@ -190,25 +218,18 @@ def p_expression(p):
         else:
             p[0] = ast_nodes.BinaryExpression(p[2], p[1], p[3])
     elif len(p) == 3 and p[1] == '!':
-            p[0] = ast_nodes.UnaryExpression(p[1], p[2])
+        p[0] = ast_nodes.UnaryExpression(p[1], p[2])
+    elif len(p) == 5:
+        p[0] = ast_nodes.ArrayAccess(p[1], p[3])
     else:
         if p.slice[1].type == 'IDENTIFIER':
             p[0] = ast_nodes.VariableReference(p[1])
-            
-        elif p.slice[1].type == 'NUMBER' or p.slice[1].type == 'FLOAT' or p.slice[1].type == 'STRING' or p.slice[1].type == 'DOUBLE':
+        elif p.slice[1].type == 'NUMBER' or p.slice[1].type == 'FLOAT' or p.slice[1].type == 'STRING':
             p[0] = ast_nodes.Literal(p[1])
-            
-        elif p.slice[1].type == 'TRUE' or p.slice[1].type == 'FALSE' or p.slice[1].type == 'BOOLEAN':
-            if p[1] == 'true' or p[1] == 'false':
-                p[0] = ast_nodes.Literal(p[1] == 'true')
-                
-            else:
-                p[0] = ast_nodes.Literal(p[1])
-                
+        elif p.slice[1].type == 'TRUE' or p.slice[1].type == 'FALSE':
+            p[0] = ast_nodes.Literal(p[1] == 'true')
         else:
             p[0] = p[1]
-            
-
 
 def p_empty(p):
     'empty :'
@@ -285,7 +306,7 @@ if __name__ == "__main__":
     }
     """
     result = parser.parse(s)
-    print(result) 
+    print(result)
     print_tree.pretty_print(result)
 
     print("Test 5")
@@ -302,7 +323,7 @@ if __name__ == "__main__":
     }
     """
     result = parser.parse(s)
-    print(result) 
+    print(result)
     print_tree.pretty_print(result)
 
     print("Test 6")
@@ -376,6 +397,24 @@ if __name__ == "__main__":
             y := y + 1.0;
         };
         return y;
+    }
+    """
+    result = parser.parse(s)
+    print(result)
+    print_tree.pretty_print(result)
+
+    print("Test 11")
+    s = """
+    function main(): double {
+        val x : int := 100;
+        var y : double;
+        var arr : [int] := [1, 2, 3, 4, 5];
+        var arr2 : [[int]] := [[1, 2], [3, 4], [5, 6]];
+        var arr3 : [[double]] := [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]];
+        var arr4 : [[[int]]] := [[[1, 2], [3, 4]], [[5, 6], [7, 8]]];
+        var arr_val : int := arr[2];
+        var arr_val2 : double := arr3[1];
+        return arr_val2;
     }
     """
     result = parser.parse(s)
