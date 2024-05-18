@@ -76,9 +76,16 @@ class LLVMIRGenerator:
         if self.symbol_table_stack:
             self.symbol_table_stack.pop()
 
-    def add_to_symbol_table(self, name, var_type, _var_name):
+    def add_to_symbol_table(self, name, var_type, _var_name, _var_type=None):
         if self.symbol_table_stack:
-            self.symbol_table_stack[-1][name] = (var_type, _var_name)
+            if name in self.symbol_table_stack[-1]:
+                raise Exception(f"Variable '{name}' already defined")
+            elif _var_type == "parameter":
+                _params = self.symbol_table_stack[-1].get("params", {})
+                _params[name] = (var_type, _var_name)
+                self.symbol_table_stack[-1]["params"] = _params
+            else:
+                self.symbol_table_stack[-1][name] = (var_type, _var_name)
 
     def lookup_symbol(self, name):
         # Search from the top of the stack downwards
@@ -167,7 +174,7 @@ class LLVMIRGenerator:
         )
         return (self.get_type(function_return_type), result_var)
 
-    def visit_FunctionDeclaration(self, node):
+    def visit_FunctionStatement(self, node):
         self.push_symbol_table()  # New scope for function
         arg_list = []
         for param_name, param_type in node.parameters:
@@ -176,20 +183,39 @@ class LLVMIRGenerator:
             self.var_count += 1
             arg_list.append(f"{arg_type} %{arg_name}")
             # Add parameter to symbol table
-            self.add_to_symbol_table(param_name, param_type, arg_name)
+            self.add_to_symbol_table(param_name, param_type, arg_name, "parameter")
 
         self.function_signatures[node.name] = node.return_type
 
         self.emit(
             f"define {self.get_type(node.return_type)} @{node.name}({', '.join(arg_list)}) {{"
         )
+        
         self.indentation += 1
+
+        # Add return variable to symbol table
+        if node.return_type != "void":
+            _return_var = f"retval{self.var_count}"
+            self.var_count += 1
+            self.emit(f"%{_return_var} = alloca {self.get_type(node.return_type)}, align 4")
+            self.add_to_symbol_table("return", node.return_type, _return_var)
+        
+        _params = self.symbol_table_stack[-1].get("params", {})
+        if _params:
+            for param_name, (param_type, param_var) in _params.items():
+                arg_name = f"x{self.var_count}"
+                self.var_count += 1
+                self.emit(f"%{arg_name} = alloca {self.get_type(param_type)}, align 4")
+                self.emit(f"store {self.get_type(param_type)} {param_var}, {self.get_type(param_type)}* %{arg_name}, align 4")
+                self.add_to_symbol_table(param_name, param_type, param_var)
+
         self.visit(node.body)
         self.indentation -= 1
         self.emit("}")
         self.pop_symbol_table()
 
-    def visit_MainFunctionDeclaration(self, node):
+    def visit_MainFunctionStatement(self, node):
+        self.push_symbol_table() # New scope for main function
         if node.parameters and any(node.parameters):
             arg_list = ", ".join(
                 f"{self.get_type(p.type)} %{p.name}" for p in node.parameters
@@ -204,6 +230,7 @@ class LLVMIRGenerator:
             self.emit("ret void")
         self.indentation -= 1
         self.emit("}")
+        self.pop_symbol_table()
 
     def visit_StatementBlock(self, node):
         for stmt in node.statements:
@@ -283,7 +310,7 @@ class LLVMIRGenerator:
                 self.visit(node.right),
             )
         )
-        
+
         if isinstance(left, tuple):
             left_var_type, left_var_name = left  # Reference Unpack tuple
         else:
@@ -337,7 +364,6 @@ class LLVMIRGenerator:
             self.emit(f"{tmp_var} = sitofp i32 {right_var_name} to float")
             right_var_name = tmp_var
             right_type = "float"
-
 
         if left_type != right_type:
             raise Exception(
@@ -402,6 +428,81 @@ class LLVMIRGenerator:
         }.get(type_str, "void")
 
 
+ast = Program(
+    global_variables=GlobalVariables(
+        [
+            VariableDeclaration(
+                var_kind="var", name="a", data_type="int", value=Literal(value=10)
+            )
+        ]
+    ),
+    declarations=[
+        FunctionStatement(
+            name="test",
+            parameters=[("x", "int")],
+            return_type="float",
+            body=[
+                VariableDeclaration(
+                    var_kind="var",
+                    name="b",
+                    data_type="int",
+                    value=VariableReference(name="a"),
+                ),
+                VariableDeclaration(
+                    var_kind="var",
+                    name="c",
+                    data_type="int",
+                    value=VariableReference(name="a"),
+                ),
+                VariableDeclaration(
+                    var_kind="var",
+                    name="y",
+                    data_type="int",
+                    value=VariableReference(name="x"),
+                ),
+                AssignmentStatement(
+                    target="a",
+                    value=BinaryExpression(
+                        operator="+",
+                        left=Literal(value=20),
+                        right=VariableReference(name="x"),
+                    ),
+                ),
+                AssignmentStatement(
+                    target="b",
+                    value=BinaryExpression(
+                        operator="+",
+                        left=VariableReference(name="b"),
+                        right=Literal(value=10),
+                    ),
+                ),
+                ReturnStatement(value=VariableReference(name="b")),
+            ],
+        ),
+        MainFunctionStatement(
+            parameters=[None],
+            return_type="int",
+            body=[
+                VariableDeclaration(
+                    var_kind="var",
+                    name="f",
+                    data_type="float",
+                    value=FunctionCall(name="test", arguments=[Literal(value=11)]),
+                ),
+                VariableDeclaration(
+                    var_kind="var",
+                    name="g",
+                    data_type="float",
+                    value=FunctionCall(
+                        name="test", arguments=[VariableReference(name="a")]
+                    ),
+                ),
+                ReturnStatement(value=Literal(value=0)),
+            ],
+        ),
+    ],
+)
+
 '''ast = Program(
     global_variables=GlobalVariables(
         [
@@ -411,7 +512,7 @@ class LLVMIRGenerator:
         ]
     ),
     declarations=[
-        MainFunctionDeclaration(
+        MainFunctionStatement(
             parameters=[None],
             return_type="void",
             body=[
@@ -451,79 +552,79 @@ class LLVMIRGenerator:
     ],
 )'''
 
-ast = Program(
-    global_variables=GlobalVariables(
-        [
-            VariableDeclaration(
-                var_kind="val", name="x", data_type="int", value=Literal(value=1)
-            ),
-            VariableDeclaration(
-                var_kind="val", name="y", data_type="float", value=Literal(value=2.0)
-            ),
-        ]
-    ),
-    declarations=[
-        FunctionDeclaration(
-            name="test",
-            parameters=[("a", "int"), ("b", "float")],
-            return_type="float",
-            body=[
-                IfStatement(
-                    condition=BinaryExpression(
-                        operator=">",
-                        left=VariableReference(name="a"),
-                        right=VariableReference(name="x"),
-                    ),
-                    then_block=[
-                        ReturnStatement(
-                            value=BinaryExpression(
-                                operator="+",
-                                left=VariableReference(name="y"),
-                                right=VariableReference(name="x"),
-                            )
-                        )
-                    ],
-                    else_block=[
-                        ReturnStatement(
-                            value=BinaryExpression(
-                                operator="-",
-                                left=VariableReference(name="y"),
-                                right=VariableReference(name="x"),
-                            )
-                        )
-                    ],
-                )
-            ],
-        ),
-        MainFunctionDeclaration(
-            parameters=[None],
-            return_type="void",
-            body=[
-                VariableDeclaration(
-                    var_kind="var", name="a", data_type="int", value=Literal(value=2)
-                ),
-                VariableDeclaration(
-                    var_kind="var",
-                    name="b",
-                    data_type="float",
-                    value=Literal(value=3.0),
-                ),
-                VariableDeclaration(
-                    var_kind="var",
-                    name="c",
-                    data_type="float",
-                    value=FunctionCall(
-                        name="test",
-                        arguments=[
-                            VariableReference(name="a"),
-                            VariableReference(name="b"),
-                        ],
-                    ),
-                ),
-            ],
-        ),
-    ],
-)
+# ast = Program(
+#     global_variables=GlobalVariables(
+#         [
+#             VariableDeclaration(
+#                 var_kind="val", name="x", data_type="int", value=Literal(value=1)
+#             ),
+#             VariableDeclaration(
+#                 var_kind="val", name="y", data_type="float", value=Literal(value=2.0)
+#             ),
+#         ]
+#     ),
+#     declarations=[
+#         FunctionStatement(
+#             name="test",
+#             parameters=[("a", "int"), ("b", "float")],
+#             return_type="float",
+#             body=[
+#                 IfStatement(
+#                     condition=BinaryExpression(
+#                         operator=">",
+#                         left=VariableReference(name="a"),
+#                         right=VariableReference(name="x"),
+#                     ),
+#                     then_block=[
+#                         ReturnStatement(
+#                             value=BinaryExpression(
+#                                 operator="+",
+#                                 left=VariableReference(name="y"),
+#                                 right=VariableReference(name="x"),
+#                             )
+#                         )
+#                     ],
+#                     else_block=[
+#                         ReturnStatement(
+#                             value=BinaryExpression(
+#                                 operator="-",
+#                                 left=VariableReference(name="y"),
+#                                 right=VariableReference(name="x"),
+#                             )
+#                         )
+#                     ],
+#                 )
+#             ],
+#         ),
+#         MainFunctionStatement(
+#             parameters=[None],
+#             return_type="void",
+#             body=[
+#                 VariableDeclaration(
+#                     var_kind="var", name="a", data_type="int", value=Literal(value=2)
+#                 ),
+#                 VariableDeclaration(
+#                     var_kind="var",
+#                     name="b",
+#                     data_type="float",
+#                     value=Literal(value=3.0),
+#                 ),
+#                 VariableDeclaration(
+#                     var_kind="var",
+#                     name="c",
+#                     data_type="float",
+#                     value=FunctionCall(
+#                         name="test",
+#                         arguments=[
+#                             VariableReference(name="a"),
+#                             VariableReference(name="b"),
+#                         ],
+#                     ),
+#                 ),
+#             ],
+#         ),
+#     ],
+# )
 
 # Test the LLVMIRGenerator
 '''ast = Program(
@@ -538,7 +639,7 @@ ast = Program(
         ]
     ),
     declarations=[
-        FunctionDeclaration(
+        FunctionStatement(
             name="test",
             parameters=[("z", "int"), ("w", "float")],
             return_type="float",
@@ -612,7 +713,7 @@ ast = Program(
                 ReturnStatement(value=VariableReference(name="w")),
             ],
         ),
-        MainFunctionDeclaration(
+        MainFunctionStatement(
             parameters=[None],
             return_type="void",
             body=[
