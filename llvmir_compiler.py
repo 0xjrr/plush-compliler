@@ -12,47 +12,6 @@ class LLVMIRGenerator:
         self.function_signatures = {}
         self.declaration_scope = None
         self.program = program
-        # self.transform_ast(self.program)
-
-    def transform_ast(self, program: Program):
-        literal_to_var: Dict[tuple, str] = {}  # Maps (value, type): variable name
-        global_var_index = 1
-
-        def generate_var_name(literal):
-            nonlocal global_var_index
-            dtype = type(literal.value).__name__
-            var_name = f"const_{dtype}_{global_var_index}"
-            global_var_index += 1
-            return var_name
-
-        def process_node(node):
-            if isinstance(node, Literal):
-                literal_key = (node.value, type(node.value).__name__)
-                if literal_key not in literal_to_var:
-                    var_name = generate_var_name(node)
-                    literal_to_var[literal_key] = var_name
-                    # Create and add the global variable
-                    new_global_var = VariableDeclaration(
-                        var_kind="val",
-                        name=var_name,
-                        data_type=type(node.value).__name__.lower(),
-                        value=node,  # Use the literal itself as the initial value
-                    )
-                    program.global_variables.declarations.append(new_global_var)
-                # Replace the literal with a variable reference
-                return VariableReference(name=literal_to_var[literal_key])
-            elif isinstance(node, list):
-                return [process_node(elem) for elem in node]
-            elif hasattr(node, "__dataclass_fields__"):
-                for field in node.__dataclass_fields__:
-                    elem = getattr(node, field)
-                    if isinstance(elem, (ASTNode, list)):
-                        setattr(node, field, process_node(elem))
-            return node
-
-        # Process all declarations
-        for declaration in program.declarations:
-            process_node(declaration)
 
     def emit(self, line):
         self.output.append("    " * self.indentation + line)
@@ -123,25 +82,48 @@ class LLVMIRGenerator:
             self.var_count += 1
             if type_ir in ("float", "double"):
                 self.emit(f"@{var_vame} = global {type_ir} {float(value)}, align 8")
+            elif type_ir == "i1":
+                self.emit(f"@{var_vame} = global {type_ir} {int(value)}, align 1")
             else:
                 self.emit(f"@{var_vame} = global {type_ir} {value}, align 4")
         else:
             var_vame = f"x{self.var_count}"
             self.var_count += 1
             # Allocate memory for the variable
-            self.emit(f"%{var_vame} = alloca {type_ir}, align 4")
             # Store the initial value
             if node.value:
                 if isinstance(node.value, Literal):
                     if type_ir in ("float", "double"):
-                        self.emit(f"store {type_ir} {float(value)}, {type_ir}* %{var_vame}, align 8")
+                        self.emit(f"%{var_vame} = alloca {type_ir}, align 8")
+                        self.emit(
+                            f"store {type_ir} {float(value)}, {type_ir}* %{var_vame}, align 8"
+                        )
+                    elif type_ir == "i1":
+                        self.emit(f"%{var_vame} = alloca {type_ir}, align 1")
+                        self.emit(
+                            f"store {type_ir} {int(value)}, {type_ir}* %{var_vame}, align 1"
+                        )
                     else:
-                        self.emit(f"store {type_ir} {value}, {type_ir}* %{var_vame}, align 4")
+                        self.emit(f"%{var_vame} = alloca {type_ir}, align 4")
+                        self.emit(
+                            f"store {type_ir} {value}, {type_ir}* %{var_vame}, align 4"
+                        )
                 else:
                     if lit_type in ("float", "double"):
-                        self.emit(f"store {lit_type} {value}, {lit_type}* %{var_vame}, align 8")
+                        self.emit(f"%{var_vame} = alloca {lit_type}, align 8")
+                        self.emit(
+                            f"store {lit_type} {value}, {lit_type}* %{var_vame}, align 8"
+                        )
+                    elif lit_type == "i1":
+                        self.emit(f"%{var_vame} = alloca {lit_type}, align 1")
+                        self.emit(
+                            f"store {lit_type} {value}, {lit_type}* %{var_vame}, align 1"
+                        )
                     else:
-                        self.emit(f"store {type_ir}* {value}, {type_ir}* %{var_vame}, align 4")
+                        self.emit(f"%{var_vame} = alloca {lit_type}, align 4")
+                        self.emit(
+                            f"store {type_ir} {value}, {type_ir}* %{var_vame}, align 4"
+                        )
 
         self.add_to_symbol_table(node.name, node.data_type, var_vame)
 
@@ -174,63 +156,76 @@ class LLVMIRGenerator:
         )
         return (self.get_type(function_return_type), result_var)
 
-    def visit_FunctionStatement(self, node):
+    def function_statement(self, node, function_name):
         self.push_symbol_table()  # New scope for function
         arg_list = []
-        for param_name, param_type in node.parameters:
-            arg_type = self.get_type(param_type)
-            arg_name = f"p{self.var_count}"
-            self.var_count += 1
-            arg_list.append(f"{arg_type} %{arg_name}")
-            # Add parameter to symbol table
-            self.add_to_symbol_table(param_name, param_type, arg_name, "parameter")
+        if node.parameters and any(node.parameters):
+            for param_name, param_type in node.parameters:
+                arg_type = self.get_type(param_type)
+                arg_name = f"p{self.var_count}"
+                self.var_count += 1
+                arg_list.append(f"{arg_type} %{arg_name}")
+                # Add parameter to symbol table
+                self.add_to_symbol_table(param_name, param_type, arg_name, "parameter")
 
-        self.function_signatures[node.name] = node.return_type
+        self.function_signatures[function_name] = node.return_type
 
         self.emit(
-            f"define {self.get_type(node.return_type)} @{node.name}({', '.join(arg_list)}) {{"
+            f"define {self.get_type(node.return_type)} @{function_name}({', '.join(arg_list)}) {{"
         )
-        
+
         self.indentation += 1
 
         # Add return variable to symbol table
         if node.return_type != "void":
             _return_var = f"retval{self.var_count}"
             self.var_count += 1
-            self.emit(f"%{_return_var} = alloca {self.get_type(node.return_type)}, align 4")
+            self.emit(
+                f"%{_return_var} = alloca {self.get_type(node.return_type)}, align 4"
+            )
             self.add_to_symbol_table("return", node.return_type, _return_var)
-        
+            _return_block = f"retblock{self.var_count}"
+            self.add_to_symbol_table("return_code_block", "block", _return_block)
+
         _params = self.symbol_table_stack[-1].get("params", {})
         if _params:
             for param_name, (param_type, param_var) in _params.items():
                 arg_name = f"x{self.var_count}"
                 self.var_count += 1
                 self.emit(f"%{arg_name} = alloca {self.get_type(param_type)}, align 4")
-                self.emit(f"store {self.get_type(param_type)} {param_var}, {self.get_type(param_type)}* %{arg_name}, align 4")
+                self.emit(
+                    f"store {self.get_type(param_type)} %{param_var}, {self.get_type(param_type)}* %{arg_name}, align 4"
+                )
                 self.add_to_symbol_table(param_name, param_type, param_var)
 
         self.visit(node.body)
         self.indentation -= 1
+
+        if node.return_type == "void":
+            self.indentation += 1
+            self.emit("ret void")
+            self.indentation -= 1
+        else:
+            _return_block = self.lookup_symbol("return_code_block")[1]
+            self.emit(f"{_return_block}:")
+            self.indentation += 1
+            ret_type, ret_val = self.lookup_symbol("return")
+            var_name = f"%return{self.var_count}"
+            self.var_count += 1
+            self.emit(
+                f"{var_name} = load {self.get_type(ret_type)}, {self.get_type(ret_type)}* %{ret_val}, align 4"
+            )
+            self.emit(f"ret {self.get_type(ret_type)} {var_name}")
+            self.indentation -= 1
+
         self.emit("}")
         self.pop_symbol_table()
+
+    def visit_FunctionStatement(self, node):
+        self.function_statement(node, node.name)
 
     def visit_MainFunctionStatement(self, node):
-        self.push_symbol_table() # New scope for main function
-        if node.parameters and any(node.parameters):
-            arg_list = ", ".join(
-                f"{self.get_type(p.type)} %{p.name}" for p in node.parameters
-            )
-        else:
-            arg_list = ""
-
-        self.emit(f"define {self.get_type(node.return_type)} @main({arg_list}) {{")
-        self.indentation += 1
-        self.visit(node.body)
-        if node.return_type == "void":
-            self.emit("ret void")
-        self.indentation -= 1
-        self.emit("}")
-        self.pop_symbol_table()
+        self.function_statement(node, "main")
 
     def visit_StatementBlock(self, node):
         for stmt in node.statements:
@@ -289,7 +284,11 @@ class LLVMIRGenerator:
     def visit_ReturnStatement(self, node):
         if node.value:
             ret_type, ret_val = self.visit(node.value)
-            self.emit(f"ret {ret_type} {ret_val}")
+            self.emit(
+                f"store {ret_type} {ret_val}, {ret_type}* %{self.lookup_symbol('return')[1]}"
+            )
+            _return_code_block_var = self.lookup_symbol("return_code_block")[1]
+            self.emit(f"br label %{_return_code_block_var}")
         else:
             self.emit("ret void")
 
@@ -503,7 +502,7 @@ ast = Program(
     ],
 )
 
-'''ast = Program(
+"""ast = Program(
     global_variables=GlobalVariables(
         [
             VariableDeclaration(
@@ -550,7 +549,7 @@ ast = Program(
             ],
         )
     ],
-)'''
+)"""
 
 # ast = Program(
 #     global_variables=GlobalVariables(
@@ -627,7 +626,7 @@ ast = Program(
 # )
 
 # Test the LLVMIRGenerator
-'''ast = Program(
+"""ast = Program(
     global_variables=GlobalVariables(
         [
             VariableDeclaration(
@@ -741,7 +740,7 @@ ast = Program(
             ],
         ),
     ],
-)'''
+)"""
 generator = LLVMIRGenerator(ast)
 llvm_ir = generator.generate()
 print(ast)
