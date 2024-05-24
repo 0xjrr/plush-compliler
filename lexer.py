@@ -52,6 +52,11 @@ tokens = [
     "COLON",
     "COMMA",
     "ASSIGN",
+    # Increment and decrement
+    "PLUSPLUS",
+    "MINUSMINUS",
+    "INCREMENT",
+    "DECREMENT",
     # Types
     "TYPE",
     # Main and return
@@ -96,6 +101,12 @@ t_BITWISE_XOR = r"\^"
 t_BITWISE_NOT = r"~"
 t_BITWISE_LSHIFT = r"<<"
 t_BITWISE_RSHIFT = r">>"
+
+# Increment and decrement
+t_PLUSPLUS = r"\+\+"
+t_MINUSMINUS = r"--"
+t_INCREMENT = r"\+="
+t_DECREMENT = r"-="
 
 # Keywords
 reserved = {
