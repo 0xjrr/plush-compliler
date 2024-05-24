@@ -12,7 +12,8 @@ precedence = (
     ('left', 'BITWISE_AND'),  # Left associative bitwise AND
     ('left', 'BITWISE_OR'),  # Left associative bitwise OR
     ('left', 'BITWISE_XOR'),  # Left associative bitwise XOR
-    ('left', 'BITWISE_LSHIFT', 'BITWISE_RSHIFT')  # Left associative bitwise shift operators
+    ('left', 'BITWISE_LSHIFT', 'BITWISE_RSHIFT'),  # Left associative bitwise shift operators
+    ('right', 'PLUSPLUS', 'MINUSMINUS'),  # Right associative increment and decrement
 )
 
 # Update the program structure to include a list of GlobalVariables
@@ -127,6 +128,8 @@ def p_statement(p):
                  | do_while_statement
                  | assignment_statement
                  | array_assignment_statement
+                 | increment_statement
+                 | decrement_statement
                  | expression_statement
                  | return_statement"""
     p[0] = p[1]
@@ -156,8 +159,31 @@ def p_do_while_statement(p):
     p[0] = ast_nodes.DoWhileStatement(p[5], p[2])
 
 def p_assignment_statement(p):
-    "assignment_statement : IDENTIFIER ASSIGN expression SEMICOLON"
-    p[0] = ast_nodes.AssignmentStatement(p[1], p[3])
+    """assignment_statement : IDENTIFIER ASSIGN expression SEMICOLON
+                            | IDENTIFIER INCREMENT expression SEMICOLON
+                            | IDENTIFIER DECREMENT expression SEMICOLON"""
+    if p[2] == ':=':
+        p[0] = ast_nodes.AssignmentStatement(p[1], p[3])
+    elif p[2] == '+=':
+        p[0] = ast_nodes.AssignmentStatement(p[1], ast_nodes.BinaryExpression('+', ast_nodes.VariableReference(p[1]), p[3]))
+    elif p[2] == '-=':
+        p[0] = ast_nodes.AssignmentStatement(p[1], ast_nodes.BinaryExpression('-', ast_nodes.VariableReference(p[1]), p[3]))
+
+def p_increment_statement(p):
+    """increment_statement : IDENTIFIER PLUSPLUS SEMICOLON
+                           | PLUSPLUS IDENTIFIER SEMICOLON"""
+    if p[2] == '++':
+        p[0] = ast_nodes.AssignmentStatement(p[1], ast_nodes.BinaryExpression('+', ast_nodes.VariableReference(p[1]), ast_nodes.Literal(1)))
+    else:
+        p[0] = ast_nodes.AssignmentStatement(p[2], ast_nodes.BinaryExpression('+', ast_nodes.VariableReference(p[2]), ast_nodes.Literal(1)))
+
+def p_decrement_statement(p):
+    """decrement_statement : IDENTIFIER MINUSMINUS SEMICOLON
+                           | MINUSMINUS IDENTIFIER SEMICOLON"""
+    if p[2] == '--':
+        p[0] = ast_nodes.AssignmentStatement(p[1], ast_nodes.BinaryExpression('-', ast_nodes.VariableReference(p[1]), ast_nodes.Literal(1)))
+    else:
+        p[0] = ast_nodes.AssignmentStatement(p[2], ast_nodes.BinaryExpression('-', ast_nodes.VariableReference(p[2]), ast_nodes.Literal(1)))
 
 def p_array_assignment_statement(p):
     "array_assignment_statement : IDENTIFIER LBRACKET expression RBRACKET ASSIGN expression SEMICOLON"
@@ -415,6 +441,25 @@ if __name__ == "__main__":
         var arr_val : int := arr[2];
         var arr_val2 : double := arr3[1];
         return arr_val2;
+    }
+    """
+    result = parser.parse(s)
+    print(result)
+    print_tree.pretty_print(result)
+
+    print("Test PlusPlus, MinusMinus, Increment, Decrement")
+    print("Test 12")
+    s = """
+    function main(): int {
+        var x : int := 1;
+        var y : int := 2;
+        x++;
+        y--;
+        ++x;
+        --y;
+        x += 1;
+        y -= 1;
+        return x + y;
     }
     """
     result = parser.parse(s)
