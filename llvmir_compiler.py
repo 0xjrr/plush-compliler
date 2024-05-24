@@ -272,6 +272,19 @@ class LLVMIRGenerator:
         self.emit("end:")
         self.pop_symbol_table()
 
+    def visit_DoWhileStatement(self, node):
+        self.push_symbol_table()
+        self.emit("br label %body")
+        self.emit("body:")
+        self.indentation += 1
+        self.visit(node.body)
+        self.indentation -= 1
+        cond_var = self.visit(node.condition)
+        cond_var_type, cond_var_name = cond_var
+        self.emit(f"br i1 {cond_var_name}, label %body, label %end")
+        self.emit("end:")
+        self.pop_symbol_table()
+
     def visit_AssignmentStatement(self, node):
         lit_type, value = self.visit(node.value)
         var_type, var_name = self.lookup_symbol(node.target)
