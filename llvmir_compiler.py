@@ -439,322 +439,322 @@ class LLVMIRGenerator:
             "void": "void",
         }.get(type_str, "void")
 
-
-ast = Program(
-    global_variables=GlobalVariables(
-        [
-            VariableDeclaration(
-                var_kind="var", name="a", data_type="int", value=Literal(value=10)
-            )
-        ]
-    ),
-    declarations=[
-        FunctionStatement(
-            name="test",
-            parameters=[("x", "int")],
-            return_type="float",
-            body=[
+if __name__ == "__main__":
+    ast = Program(
+        global_variables=GlobalVariables(
+            [
                 VariableDeclaration(
-                    var_kind="var",
-                    name="b",
-                    data_type="int",
-                    value=VariableReference(name="a"),
-                ),
-                VariableDeclaration(
-                    var_kind="var",
-                    name="c",
-                    data_type="int",
-                    value=VariableReference(name="a"),
-                ),
-                VariableDeclaration(
-                    var_kind="var",
-                    name="y",
-                    data_type="int",
-                    value=VariableReference(name="x"),
-                ),
-                AssignmentStatement(
-                    target="a",
-                    value=BinaryExpression(
-                        operator="+",
-                        left=Literal(value=20),
-                        right=VariableReference(name="x"),
-                    ),
-                ),
-                AssignmentStatement(
-                    target="b",
-                    value=BinaryExpression(
-                        operator="+",
-                        left=VariableReference(name="b"),
-                        right=Literal(value=10),
-                    ),
-                ),
-                ReturnStatement(value=VariableReference(name="b")),
-            ],
+                    var_kind="var", name="a", data_type="int", value=Literal(value=10)
+                )
+            ]
         ),
-        MainFunctionStatement(
-            parameters=[None],
-            return_type="int",
-            body=[
-                VariableDeclaration(
-                    var_kind="var",
-                    name="f",
-                    data_type="float",
-                    value=FunctionCall(name="test", arguments=[Literal(value=11)]),
-                ),
-                VariableDeclaration(
-                    var_kind="var",
-                    name="g",
-                    data_type="float",
-                    value=FunctionCall(
-                        name="test", arguments=[VariableReference(name="a")]
+        declarations=[
+            FunctionStatement(
+                name="test",
+                parameters=[("x", "int")],
+                return_type="float",
+                body=[
+                    VariableDeclaration(
+                        var_kind="var",
+                        name="b",
+                        data_type="int",
+                        value=VariableReference(name="a"),
                     ),
-                ),
-                ReturnStatement(value=Literal(value=0)),
-            ],
+                    VariableDeclaration(
+                        var_kind="var",
+                        name="c",
+                        data_type="int",
+                        value=VariableReference(name="a"),
+                    ),
+                    VariableDeclaration(
+                        var_kind="var",
+                        name="y",
+                        data_type="int",
+                        value=VariableReference(name="x"),
+                    ),
+                    AssignmentStatement(
+                        target="a",
+                        value=BinaryExpression(
+                            operator="+",
+                            left=Literal(value=20),
+                            right=VariableReference(name="x"),
+                        ),
+                    ),
+                    AssignmentStatement(
+                        target="b",
+                        value=BinaryExpression(
+                            operator="+",
+                            left=VariableReference(name="b"),
+                            right=Literal(value=10),
+                        ),
+                    ),
+                    ReturnStatement(value=VariableReference(name="b")),
+                ],
+            ),
+            MainFunctionStatement(
+                parameters=[None],
+                return_type="int",
+                body=[
+                    VariableDeclaration(
+                        var_kind="var",
+                        name="f",
+                        data_type="float",
+                        value=FunctionCall(name="test", arguments=[Literal(value=11)]),
+                    ),
+                    VariableDeclaration(
+                        var_kind="var",
+                        name="g",
+                        data_type="float",
+                        value=FunctionCall(
+                            name="test", arguments=[VariableReference(name="a")]
+                        ),
+                    ),
+                    ReturnStatement(value=Literal(value=0)),
+                ],
+            ),
+        ],
+    )
+
+    """ast = Program(
+        global_variables=GlobalVariables(
+            [
+                VariableDeclaration(
+                    var_kind="val", name="x", data_type="double", value=Literal(value=1)
+                )
+            ]
         ),
-    ],
-)
-
-"""ast = Program(
-    global_variables=GlobalVariables(
-        [
-            VariableDeclaration(
-                var_kind="val", name="x", data_type="double", value=Literal(value=1)
-            )
-        ]
-    ),
-    declarations=[
-        MainFunctionStatement(
-            parameters=[None],
-            return_type="void",
-            body=[
-                VariableDeclaration(
-                    var_kind="var", name="a", data_type="double", value=Literal(value=2)
-                ),
-                IfStatement(
-                    condition=BinaryExpression(
-                        operator=">",
-                        left=VariableReference(name="a"),
-                        right=VariableReference(name="x"),
+        declarations=[
+            MainFunctionStatement(
+                parameters=[None],
+                return_type="void",
+                body=[
+                    VariableDeclaration(
+                        var_kind="var", name="a", data_type="double", value=Literal(value=2)
                     ),
-                    then_block=[
-                        AssignmentStatement(
-                            target="a",
-                            value=BinaryExpression(
-                                operator="+",
-                                left=VariableReference(name="a"),
-                                right=Literal(value=1),
-                            ),
-                        )
-                    ],
-                    else_block=[
-                        AssignmentStatement(
-                            target="a",
-                            value=BinaryExpression(
-                                operator="-",
-                                left=VariableReference(name="a"),
-                                right=Literal(value=1),
-                            ),
-                        )
-                    ],
-                ),
-                ReturnStatement(value=None),
-            ],
-        )
-    ],
-)"""
-
-# ast = Program(
-#     global_variables=GlobalVariables(
-#         [
-#             VariableDeclaration(
-#                 var_kind="val", name="x", data_type="int", value=Literal(value=1)
-#             ),
-#             VariableDeclaration(
-#                 var_kind="val", name="y", data_type="float", value=Literal(value=2.0)
-#             ),
-#         ]
-#     ),
-#     declarations=[
-#         FunctionStatement(
-#             name="test",
-#             parameters=[("a", "int"), ("b", "float")],
-#             return_type="float",
-#             body=[
-#                 IfStatement(
-#                     condition=BinaryExpression(
-#                         operator=">",
-#                         left=VariableReference(name="a"),
-#                         right=VariableReference(name="x"),
-#                     ),
-#                     then_block=[
-#                         ReturnStatement(
-#                             value=BinaryExpression(
-#                                 operator="+",
-#                                 left=VariableReference(name="y"),
-#                                 right=VariableReference(name="x"),
-#                             )
-#                         )
-#                     ],
-#                     else_block=[
-#                         ReturnStatement(
-#                             value=BinaryExpression(
-#                                 operator="-",
-#                                 left=VariableReference(name="y"),
-#                                 right=VariableReference(name="x"),
-#                             )
-#                         )
-#                     ],
-#                 )
-#             ],
-#         ),
-#         MainFunctionStatement(
-#             parameters=[None],
-#             return_type="void",
-#             body=[
-#                 VariableDeclaration(
-#                     var_kind="var", name="a", data_type="int", value=Literal(value=2)
-#                 ),
-#                 VariableDeclaration(
-#                     var_kind="var",
-#                     name="b",
-#                     data_type="float",
-#                     value=Literal(value=3.0),
-#                 ),
-#                 VariableDeclaration(
-#                     var_kind="var",
-#                     name="c",
-#                     data_type="float",
-#                     value=FunctionCall(
-#                         name="test",
-#                         arguments=[
-#                             VariableReference(name="a"),
-#                             VariableReference(name="b"),
-#                         ],
-#                     ),
-#                 ),
-#             ],
-#         ),
-#     ],
-# )
-
-# Test the LLVMIRGenerator
-"""ast = Program(
-    global_variables=GlobalVariables(
-        [
-            VariableDeclaration(
-                var_kind="val", name="x", data_type="int", value=Literal(value=1)
-            ),
-            VariableDeclaration(
-                var_kind="var", name="y", data_type="float", value=Literal(value=1.2)
-            ),
-        ]
-    ),
-    declarations=[
-        FunctionStatement(
-            name="test",
-            parameters=[("z", "int"), ("w", "float")],
-            return_type="float",
-            body=[
-                VariableDeclaration(
-                    var_kind="var",
-                    name="k",
-                    data_type="int",
-                    value=VariableReference(name="z"),
-                ),
-                WhileStatement(
-                    condition=BinaryExpression(
-                        operator=">",
-                        left=VariableReference(name="k"),
-                        right=VariableReference(name="x"),
-                    ),
-                    body=[
-                        AssignmentStatement(
-                            target="k",
-                            value=BinaryExpression(
-                                operator="-",
-                                left=VariableReference(name="k"),
-                                right=Literal(value=1),
-                            ),
+                    IfStatement(
+                        condition=BinaryExpression(
+                            operator=">",
+                            left=VariableReference(name="a"),
+                            right=VariableReference(name="x"),
                         ),
-                        AssignmentStatement(
-                            target="y",
-                            value=BinaryExpression(
-                                operator="+",
-                                left=VariableReference(name="y"),
-                                right=VariableReference(name="w"),
-                            ),
-                        ),
-                    ],
-                ),
-                IfStatement(
-                    condition=BinaryExpression(
-                        operator="==",
-                        left=VariableReference(name="k"),
-                        right=Literal(value=0),
-                    ),
-                    then_block=[ReturnStatement(value=VariableReference(name="y"))],
-                    else_block=None,
-                ),
-                IfStatement(
-                    condition=BinaryExpression(
-                        operator="==",
-                        left=VariableReference(name="k"),
-                        right=Literal(value=1),
-                    ),
-                    then_block=[
-                        ReturnStatement(
-                            value=BinaryExpression(
-                                operator="+",
-                                left=VariableReference(name="y"),
-                                right=Literal(value=1.0),
+                        then_block=[
+                            AssignmentStatement(
+                                target="a",
+                                value=BinaryExpression(
+                                    operator="+",
+                                    left=VariableReference(name="a"),
+                                    right=Literal(value=1),
+                                ),
                             )
-                        )
-                    ],
-                    else_block=[
-                        AssignmentStatement(
-                            target="w",
-                            value=BinaryExpression(
-                                operator="+",
-                                left=VariableReference(name="w"),
-                                right=VariableReference(name="y"),
-                            ),
-                        )
-                    ],
-                ),
-                ReturnStatement(value=VariableReference(name="w")),
-            ],
-        ),
-        MainFunctionStatement(
-            parameters=[None],
-            return_type="void",
-            body=[
-                VariableDeclaration(
-                    var_kind="var", name="a", data_type="int", value=Literal(value=2)
-                ),
-                VariableDeclaration(
-                    var_kind="var",
-                    name="b",
-                    data_type="float",
-                    value=Literal(value=3.0),
-                ),
-                VariableDeclaration(
-                    var_kind="var",
-                    name="c",
-                    data_type="float",
-                    value=FunctionCall(
-                        name="test",
-                        arguments=[
-                            VariableReference(name="a"),
-                            VariableReference(name="b"),
+                        ],
+                        else_block=[
+                            AssignmentStatement(
+                                target="a",
+                                value=BinaryExpression(
+                                    operator="-",
+                                    left=VariableReference(name="a"),
+                                    right=Literal(value=1),
+                                ),
+                            )
                         ],
                     ),
+                    ReturnStatement(value=None),
+                ],
+            )
+        ],
+    )"""
+
+    # ast = Program(
+    #     global_variables=GlobalVariables(
+    #         [
+    #             VariableDeclaration(
+    #                 var_kind="val", name="x", data_type="int", value=Literal(value=1)
+    #             ),
+    #             VariableDeclaration(
+    #                 var_kind="val", name="y", data_type="float", value=Literal(value=2.0)
+    #             ),
+    #         ]
+    #     ),
+    #     declarations=[
+    #         FunctionStatement(
+    #             name="test",
+    #             parameters=[("a", "int"), ("b", "float")],
+    #             return_type="float",
+    #             body=[
+    #                 IfStatement(
+    #                     condition=BinaryExpression(
+    #                         operator=">",
+    #                         left=VariableReference(name="a"),
+    #                         right=VariableReference(name="x"),
+    #                     ),
+    #                     then_block=[
+    #                         ReturnStatement(
+    #                             value=BinaryExpression(
+    #                                 operator="+",
+    #                                 left=VariableReference(name="y"),
+    #                                 right=VariableReference(name="x"),
+    #                             )
+    #                         )
+    #                     ],
+    #                     else_block=[
+    #                         ReturnStatement(
+    #                             value=BinaryExpression(
+    #                                 operator="-",
+    #                                 left=VariableReference(name="y"),
+    #                                 right=VariableReference(name="x"),
+    #                             )
+    #                         )
+    #                     ],
+    #                 )
+    #             ],
+    #         ),
+    #         MainFunctionStatement(
+    #             parameters=[None],
+    #             return_type="void",
+    #             body=[
+    #                 VariableDeclaration(
+    #                     var_kind="var", name="a", data_type="int", value=Literal(value=2)
+    #                 ),
+    #                 VariableDeclaration(
+    #                     var_kind="var",
+    #                     name="b",
+    #                     data_type="float",
+    #                     value=Literal(value=3.0),
+    #                 ),
+    #                 VariableDeclaration(
+    #                     var_kind="var",
+    #                     name="c",
+    #                     data_type="float",
+    #                     value=FunctionCall(
+    #                         name="test",
+    #                         arguments=[
+    #                             VariableReference(name="a"),
+    #                             VariableReference(name="b"),
+    #                         ],
+    #                     ),
+    #                 ),
+    #             ],
+    #         ),
+    #     ],
+    # )
+
+    # Test the LLVMIRGenerator
+    """ast = Program(
+        global_variables=GlobalVariables(
+            [
+                VariableDeclaration(
+                    var_kind="val", name="x", data_type="int", value=Literal(value=1)
                 ),
-            ],
+                VariableDeclaration(
+                    var_kind="var", name="y", data_type="float", value=Literal(value=1.2)
+                ),
+            ]
         ),
-    ],
-)"""
-generator = LLVMIRGenerator(ast)
-llvm_ir = generator.generate()
-print(ast)
-print(llvm_ir)
+        declarations=[
+            FunctionStatement(
+                name="test",
+                parameters=[("z", "int"), ("w", "float")],
+                return_type="float",
+                body=[
+                    VariableDeclaration(
+                        var_kind="var",
+                        name="k",
+                        data_type="int",
+                        value=VariableReference(name="z"),
+                    ),
+                    WhileStatement(
+                        condition=BinaryExpression(
+                            operator=">",
+                            left=VariableReference(name="k"),
+                            right=VariableReference(name="x"),
+                        ),
+                        body=[
+                            AssignmentStatement(
+                                target="k",
+                                value=BinaryExpression(
+                                    operator="-",
+                                    left=VariableReference(name="k"),
+                                    right=Literal(value=1),
+                                ),
+                            ),
+                            AssignmentStatement(
+                                target="y",
+                                value=BinaryExpression(
+                                    operator="+",
+                                    left=VariableReference(name="y"),
+                                    right=VariableReference(name="w"),
+                                ),
+                            ),
+                        ],
+                    ),
+                    IfStatement(
+                        condition=BinaryExpression(
+                            operator="==",
+                            left=VariableReference(name="k"),
+                            right=Literal(value=0),
+                        ),
+                        then_block=[ReturnStatement(value=VariableReference(name="y"))],
+                        else_block=None,
+                    ),
+                    IfStatement(
+                        condition=BinaryExpression(
+                            operator="==",
+                            left=VariableReference(name="k"),
+                            right=Literal(value=1),
+                        ),
+                        then_block=[
+                            ReturnStatement(
+                                value=BinaryExpression(
+                                    operator="+",
+                                    left=VariableReference(name="y"),
+                                    right=Literal(value=1.0),
+                                )
+                            )
+                        ],
+                        else_block=[
+                            AssignmentStatement(
+                                target="w",
+                                value=BinaryExpression(
+                                    operator="+",
+                                    left=VariableReference(name="w"),
+                                    right=VariableReference(name="y"),
+                                ),
+                            )
+                        ],
+                    ),
+                    ReturnStatement(value=VariableReference(name="w")),
+                ],
+            ),
+            MainFunctionStatement(
+                parameters=[None],
+                return_type="void",
+                body=[
+                    VariableDeclaration(
+                        var_kind="var", name="a", data_type="int", value=Literal(value=2)
+                    ),
+                    VariableDeclaration(
+                        var_kind="var",
+                        name="b",
+                        data_type="float",
+                        value=Literal(value=3.0),
+                    ),
+                    VariableDeclaration(
+                        var_kind="var",
+                        name="c",
+                        data_type="float",
+                        value=FunctionCall(
+                            name="test",
+                            arguments=[
+                                VariableReference(name="a"),
+                                VariableReference(name="b"),
+                            ],
+                        ),
+                    ),
+                ],
+            ),
+        ],
+    )"""
+    generator = LLVMIRGenerator(ast)
+    llvm_ir = generator.generate()
+    print(ast)
+    print(llvm_ir)
