@@ -56,7 +56,8 @@ def p_variable_declaration(p):
     """variable_declaration : VAL IDENTIFIER COLON TYPE ASSIGN expression SEMICOLON
                             | VAR IDENTIFIER COLON TYPE ASSIGN expression SEMICOLON
                             | VAR IDENTIFIER COLON TYPE SEMICOLON
-                            | VAR IDENTIFIER COLON array_type ASSIGN array_initializer SEMICOLON"""
+                            | VAR IDENTIFIER COLON array_type ASSIGN array_initializer SEMICOLON
+                            | VAL IDENTIFIER COLON array_type ASSIGN array_initializer SEMICOLON"""
     if len(p) == 8 and isinstance(p[4], list):
         p[0] = ast_nodes.ArrayDeclaration(p[1], p[2], p[4], p[6])
     elif len(p) == 8:
@@ -67,10 +68,10 @@ def p_variable_declaration(p):
 def p_array_type(p):
     """array_type : LBRACKET TYPE RBRACKET
                   | LBRACKET array_type RBRACKET"""
-    if p[2] in ['int', 'double']:
-        p[0] = [p[2]]
+    if isinstance(p[2], list):
+        p[0] = ["array"] + p[2]
     else:
-        p[0] = [p[2]]
+        p[0] = ["array", p[2]]
 
 def p_array_initializer(p):
     """array_initializer : LBRACKET expression_list RBRACKET
@@ -186,9 +187,9 @@ def p_decrement_statement(p):
         p[0] = ast_nodes.AssignmentStatement(p[2], ast_nodes.BinaryExpression('-', ast_nodes.VariableReference(p[2]), ast_nodes.Literal(1)))
 
 def p_array_assignment_statement(p):
-    "array_assignment_statement : IDENTIFIER LBRACKET expression RBRACKET ASSIGN expression SEMICOLON"
-    p[0] = ast_nodes.ArrayAssignmentStatement(p[1], p[3], p[6])
-
+    "array_assignment_statement : array_access ASSIGN expression SEMICOLON"
+    p[0] = ast_nodes.ArrayAssignmentStatement(p[1], p[3])
+    
 def p_expression_statement(p):
     "expression_statement : expression SEMICOLON"
     p[0] = ast_nodes.ExpressionStatement(p[1])
@@ -196,6 +197,19 @@ def p_expression_statement(p):
 def p_function_call(p):
     "function_call : IDENTIFIER LPAREN expression_list RPAREN"
     p[0] = ast_nodes.FunctionCall(p[1], p[3])
+
+def p_array_access(p):
+    """array_access : IDENTIFIER array_access_list"""
+    p[0] = ast_nodes.ArrayAccess(p[1], p[2])
+
+
+def p_array_access_list(p):
+    """array_access_list : array_access_list LBRACKET expression RBRACKET
+    | LBRACKET expression RBRACKET"""
+    if len(p) == 4:
+        p[0] = [p[2]]
+    else:
+        p[0] = p[1] + [p[3]]
 
 # Expressions
 def p_expression_list(p):
@@ -229,7 +243,7 @@ def p_expression(p):
                   | LPAREN expression RPAREN
                   | NOT expression
                   | IDENTIFIER
-                  | IDENTIFIER LBRACKET expression RBRACKET
+                  | array_access
                   | NUMBER
                   | FLOAT
                   | STRING
@@ -245,8 +259,12 @@ def p_expression(p):
             p[0] = ast_nodes.BinaryExpression(p[2], p[1], p[3])
     elif len(p) == 3 and p[1] == '!':
         p[0] = ast_nodes.UnaryExpression(p[1], p[2])
+    elif len(p) == 2 and isinstance(p[1], ast_nodes.ArrayAccess):
+        p[0] = p[1]
     elif len(p) == 5:
         p[0] = ast_nodes.ArrayAccess(p[1], p[3])
+    elif len(p) == 3 and isinstance(p[2], list):
+        p[0] = ast_nodes.ArrayAccess(p[1], p[2])
     else:
         if p.slice[1].type == 'IDENTIFIER':
             p[0] = ast_nodes.VariableReference(p[1])
@@ -447,8 +465,23 @@ if __name__ == "__main__":
     print(result)
     print_tree.pretty_print(result)
 
-    print("Test PlusPlus, MinusMinus, Increment, Decrement")
     print("Test 12")
+    s = """
+    function main(): int {
+        var x : [[int]] := [[1, 2], [3, 4]];
+        var w : [int] := [1, 2, 3];
+        val q : [[[[int]]]] := [[[[1, 2], [3, 4]], [[5, 6], [7, 8]]], [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]];
+        # var z : [int] := x[1];
+        var y : int := x[1][1];
+        return y;
+    }
+    """
+    result = parser.parse(s)
+    print(result)
+    print_tree.pretty_print(result)
+
+    print("Test PlusPlus, MinusMinus, Increment, Decrement")
+    print("Test 13")
     s = """
     function main(): int {
         var x : int := 1;
