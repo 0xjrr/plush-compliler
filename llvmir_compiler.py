@@ -255,34 +255,38 @@ class LLVMIRGenerator:
 
     def visit_WhileStatement(self, node):
         self.push_symbol_table()  # New scope for while block
-        self.emit("br label %cond")
-        self.emit("cond:")
+        _while_count = self.temp_count
+        self.temp_count += 1
+        self.emit(f"br label %cond{_while_count}")
+        self.emit(f"cond{_while_count}:")
         self.indentation += 1
         cond_var = self.visit(node.condition)
         cond_var_type, cond_var_name = cond_var
-        self.emit(f"br i1 {cond_var_name}, label %body, label %end")
+        self.emit(f"br i1 {cond_var_name}, label %body{_while_count}, label %end{_while_count}")
         self.indentation -= 1
 
-        self.emit("body:")
+        self.emit(f"body{_while_count}:")
         self.indentation += 1
         self.visit(node.body)
-        self.emit("br label %cond")
+        self.emit(f"br label %cond{_while_count}")
         self.indentation -= 1
 
-        self.emit("end:")
+        self.emit(f"end{_while_count}:")
         self.pop_symbol_table()
 
     def visit_DoWhileStatement(self, node):
         self.push_symbol_table()
-        self.emit("br label %body")
-        self.emit("body:")
+        _do_while_count = self.temp_count
+        self.temp_count += 1
+        self.emit(f"br label %body{_do_while_count}")
+        self.emit(f"body{_do_while_count}:")
         self.indentation += 1
         self.visit(node.body)
         self.indentation -= 1
         cond_var = self.visit(node.condition)
         cond_var_type, cond_var_name = cond_var
-        self.emit(f"br i1 {cond_var_name}, label %body, label %end")
-        self.emit("end:")
+        self.emit(f"br i1 {cond_var_name}, label %body{_do_while_count}, label %end{_do_while_count}")
+        self.emit(f"end{_do_while_count}:")
         self.pop_symbol_table()
 
     def visit_AssignmentStatement(self, node):
