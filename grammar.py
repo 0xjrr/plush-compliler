@@ -152,7 +152,7 @@ def p_if_statement(p):
         p[0] = ast_nodes.IfStatement(p[3], p[5], None)
 
 def p_while_statement(p):
-    "while_statement : WHILE LPAREN expression RPAREN statement_block SEMICOLON"
+    "while_statement : WHILE LPAREN expression RPAREN statement_block"
     p[0] = ast_nodes.WhileStatement(p[3], p[5])
 
 def p_do_while_statement(p):
@@ -333,7 +333,7 @@ if __name__ == "__main__":
         while (x > 0) {
             x := x - 1;
             z := z + "!";
-        };
+        }
         return z;
     }
     """
@@ -362,7 +362,7 @@ if __name__ == "__main__":
         } while (a < x);
        while (a > 0) {
             a := a - 1;
-        };
+        }
         return;
     }
     """
@@ -439,7 +439,7 @@ if __name__ == "__main__":
         while (x > 0) {
             x := x - 1;
             y := y + 1.0;
-        };
+        }
         return y;
     }
     """
