@@ -498,3 +498,16 @@ if __name__ == "__main__":
     result = parser.parse(s)
     print(result)
     print_tree.pretty_print(result)
+
+
+    print("Test 14")
+    s = """
+    function main(): string {
+        var x : string := "hello";
+        return x;
+    }
+    """
+    result = parser.parse(s)
+    print(result)
+    print_tree.pretty_print(result)
+
