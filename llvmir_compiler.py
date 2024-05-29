@@ -16,6 +16,9 @@ class LLVMIRGenerator:
     def emit(self, line):
         self.output.append("    " * self.indentation + line)
 
+    def emit_global(self, line):
+        self.output.insert(0, line)
+
     def generate(self):
         # self.emit("; ModuleID = 'my_program'")
         self.emit("declare dso_local i32 @printf(i8*, ...)")
@@ -103,6 +106,8 @@ class LLVMIRGenerator:
                         self.emit(
                             f"store {type_ir} {int(value)}, {type_ir}* %{var_vame}, align 1"
                         )
+                    elif type_ir == "i8":
+                        self.emit(f"%{var_vame} = {value}")
                     else:
                         self.emit(f"%{var_vame} = alloca {type_ir}, align 4")
                         self.emit(
@@ -431,8 +436,10 @@ class LLVMIRGenerator:
         elif isinstance(node.value, bool):
             return ("i1", f"{int(node.value)}")
         elif isinstance(node.value, str):
-            str_ptr = f"i8* getelementptr inbounds ([{len(node.value) + 1} x i8], [{len(node.value) + 1} x i8]* @.str, i32 0, i32 0)"
-            return ("i8*", str_ptr)
+            self.emit_global(f"@.str{self.var_count} = private unnamed_addr constant [{len(node.value) + 1} x i8] c\"{node.value}\\00\"")
+            str_ptr = f"getelementptr inbounds [{len(node.value) + 1} x i8], [{len(node.value) + 1} x i8]* @.str{self.var_count}, i32 0, i32 0"
+            self.var_count += 1
+            return (f"[{len(node.value) + 1} x i8]", str_ptr)
 
     def get_type(self, type_str):
         return {
@@ -440,6 +447,7 @@ class LLVMIRGenerator:
             "float": "double",
             "double": "double",
             "bool": "i1",
+            "string": "i8",
             "void": "void",
         }.get(type_str, "void")
 
@@ -758,6 +766,24 @@ if __name__ == "__main__":
             ),
         ],
     )"""
+    ast = Program(
+        global_variables=GlobalVariables([]),
+        declarations=[
+            MainFunctionStatement(
+                parameters=[None],
+                return_type="int",
+                body=[
+                    VariableDeclaration(
+                        var_kind="var",
+                        name="x",
+                        data_type="string",
+                        value=Literal(value="hello"),
+                    ),
+                    ReturnStatement(value=Literal(0)),
+                ],
+            )
+        ],
+    )
     generator = LLVMIRGenerator(ast)
     llvm_ir = generator.generate()
     print(ast)
