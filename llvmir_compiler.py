@@ -873,6 +873,15 @@ if __name__ == "__main__":
                     ),
                     ArrayDeclaration(
                         var_kind="var",
+                        name="q",
+                        data_type=["array", "int"],
+                        value=[
+                            Literal(value=1), Literal(value=2),
+                            Literal(value=3), Literal(value=4)
+                        ],
+                    ),
+                    ArrayDeclaration(
+                        var_kind="var",
                         name="z",
                         data_type=["array", "array", "array", "int"],
                         value=[
