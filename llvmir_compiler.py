@@ -61,9 +61,13 @@ class LLVMIRGenerator:
         return 1
 
     def calculate_array_dimensions(self, value):
-        if isinstance(value, list) and len(value) > 0 and isinstance(value[0], list):
-            return [len(value), len(value[0])]
-        return [0, 0]
+        # Calculate the dimensions of the array recursively
+        if isinstance(value, list) and len(value) > 0:
+            if isinstance(value[0], list):
+                return [len(value)] + self.calculate_array_dimensions(value[0])
+            else:
+                return [len(value)]
+        return [0]
 
     def process_global_variables(self, globals):
         self.declaration_scope = "global"
@@ -156,22 +160,35 @@ class LLVMIRGenerator:
                             )
 
         self.add_to_symbol_table(node.name, node.data_type, var_vame)
+    
+    def calculate_array_type(self, element_type, dimensions):
+        if dimensions:
+            return f"[{dimensions[0]} x {self.calculate_array_type(element_type, dimensions[1:])}]"
+        return element_type
+
+    def process_value(self, value, indices, var_name, array_type, element_type_ir):
+        if isinstance(value, list):
+            for i, subvalue in enumerate(value):
+                self.process_value(subvalue, indices + [i], var_name, array_type, element_type_ir)
+        else:
+            element_ptr = f"%{var_name}{''.join(f'_{idx}' for idx in indices)}_ptr"
+            indices_str = ", ".join(f"i32 {idx}" for idx in [0] + indices)
+            self.emit(f"{element_ptr} = getelementptr inbounds {array_type}, {array_type}* %{var_name}, {indices_str}")
+            self.emit(f"store {element_type_ir} {value.value}, {element_type_ir}* {element_ptr}, align 16")
+
 
     def visit_ArrayDeclaration(self, node):
         element_type_ir = self.get_type(node.data_type[-1])
         dimensions = self.calculate_array_dimensions(node.value)
         var_name = f"x{self.var_count}"
         self.var_count += 1
-        array_type = f"[{dimensions[0]} x [{dimensions[1]} x {element_type_ir}]]"
+        # dimensions is a list of the array dimensions
+        array_type = self.calculate_array_type(element_type_ir, dimensions)
         
         self.emit(f"%{var_name} = alloca {array_type}, align 16")
         
         # Initialize the array with values
-        for i, row in enumerate(node.value):
-            for j, value in enumerate(row):
-                element_ptr = f"%{var_name}_{i}_{j}_ptr"
-                self.emit(f"{element_ptr} = getelementptr inbounds {array_type}, {array_type}* %{var_name}, i32 0, i32 {i}, i32 {j}")
-                self.emit(f"store {element_type_ir} {value.value}, {element_type_ir}* {element_ptr}, align 16")
+        self.process_value(node.value, [], var_name, array_type, element_type_ir)
         
         self.add_to_symbol_table(node.name, [array_type, node.data_type], var_name)
 
@@ -182,7 +199,8 @@ class LLVMIRGenerator:
         
         index_vals = [self.visit(index)[1] for index in node.index]
         array_access_str = ", ".join([f"i32 {index_val}" for index_val in index_vals])
-        element_ptr = f"%{var_name}_element_ptr"
+        element_ptr = f"%{var_name}_element_ptr_{self.var_count}"
+        self.var_count += 1
         self.emit(f"{element_ptr} = getelementptr inbounds {_array_shape_str}, {_array_shape_str}* %{var_name}, i32 0, {array_access_str}")
         
         load_var = f"%{node.name}_tmp{self.temp_count}"
@@ -197,7 +215,8 @@ class LLVMIRGenerator:
         
         index_vals = [self.visit(index)[1] for index in node.index]
         array_access_str = ", ".join([f"i32 {index_val}" for index_val in index_vals])
-        element_ptr = f"%{var_name}_element_ptr"
+        element_ptr = f"%{var_name}_element_ptr_{self.var_count}"
+        self.var_count += 1
         self.emit(f"{element_ptr} = getelementptr inbounds {_array_shape_str}, {_array_shape_str}* %{var_name}, i32 0, {array_access_str}")
         
         value_type, value_ir = self.visit(node.value)
