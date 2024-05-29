@@ -47,6 +47,9 @@ tokens = [
     "DO",
     "TRUE",
     "FALSE",
+    # Break and Continue
+    "BREAK",
+    "CONTINUE",
     # Punctuation
     "SEMICOLON",
     "COLON",
@@ -117,6 +120,8 @@ reserved = {
     "else": "ELSE",
     "while": "WHILE",
     "do": "DO",
+    "break": "BREAK",
+    "continue": "CONTINUE",
     "true": "TRUE",
     "false": "FALSE",
     "int": "TYPE",
