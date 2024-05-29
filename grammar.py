@@ -4,8 +4,8 @@ import ast_nodes
 
 precedence = (
     ('nonassoc', 'LT', 'GT', 'LE', 'GE', 'EQUALS', 'NE'),  # Nonassociative operators
-    ('left', 'PLUS', 'MINUS'), # Left associative operators plus and minus
-    ('left', 'TIMES', 'DIVIDE', 'MOD'), # Left associative operators times, divide, and mod
+    ('left', 'PLUS', 'MINUS'),  # Left associative operators plus and minus
+    ('left', 'TIMES', 'DIVIDE', 'MOD'),  # Left associative operators times, divide, and mod
     ('left', 'AND', 'OR'),  # Left associative logical operators
     ('right', 'NOT'),  # Right associative Unary
     ('left', 'BITWISE_NOT'),  # Left associative bitwise NOT
@@ -202,10 +202,9 @@ def p_array_access(p):
     """array_access : IDENTIFIER array_access_list"""
     p[0] = ast_nodes.ArrayAccess(p[1], p[2])
 
-
 def p_array_access_list(p):
     """array_access_list : array_access_list LBRACKET expression RBRACKET
-    | LBRACKET expression RBRACKET"""
+                         | LBRACKET expression RBRACKET"""
     if len(p) == 4:
         p[0] = [p[2]]
     else:
