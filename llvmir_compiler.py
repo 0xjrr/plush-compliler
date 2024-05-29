@@ -1,7 +1,6 @@
 from typing import Dict
 from ast_nodes import *
 
-
 class LLVMIRGenerator:
     def __init__(self, program: Program):
         self.output = []
@@ -48,18 +47,23 @@ class LLVMIRGenerator:
                 self.symbol_table_stack[-1]["params"] = _params
             else:
                 self.symbol_table_stack[-1][name] = (var_type, _var_name)
-
+    
     def lookup_symbol(self, name):
         # Search from the top of the stack downwards
         for table in reversed(self.symbol_table_stack):
             if name in table:
                 return table[name]
         raise Exception(f"Undefined variable '{name}'")
-    
+
     def calculate_array_size(self, value):
         if isinstance(value, list):
             return len(value) * self.calculate_array_size(value[0])
         return 1
+
+    def calculate_array_dimensions(self, value):
+        if isinstance(value, list) and len(value) > 0 and isinstance(value[0], list):
+            return [len(value), len(value[0])]
+        return [0, 0]
 
     def process_global_variables(self, globals):
         self.declaration_scope = "global"
@@ -86,17 +90,18 @@ class LLVMIRGenerator:
         type_ir = self.get_type(node.data_type)
         if isinstance(node.data_type, list):  # Check if it's an array
             element_type_ir = self.get_type(node.data_type[-1])
-            dimensions = len(node.data_type) - 1
-            array_size = self.calculate_array_size(node.value)
+            dimensions = self.calculate_array_dimensions(node.value)
             var_name = f"x{self.var_count}"
             self.var_count += 1
-            self.emit(f"%{var_name} = alloca [{array_size} x {element_type_ir}], align 16")
+            array_type = f"[{dimensions[0]} x [{dimensions[1]} x {element_type_ir}]]"
+            
+            self.emit(f"%{var_name} = alloca {array_type}, align 16")
             
             # Initialize the array with values
             for i, row in enumerate(node.value):
                 for j, value in enumerate(row):
                     element_ptr = f"%{var_name}_{i}_{j}_ptr"
-                    self.emit(f"{element_ptr} = getelementptr inbounds [{array_size} x {element_type_ir}], [{array_size} x {element_type_ir}]* %{var_name}, i32 0, i32 {i * len(row) + j}")
+                    self.emit(f"{element_ptr} = getelementptr inbounds {array_type}, {array_type}* %{var_name}, i32 0, i32 {i}, i32 {j}")
                     self.emit(f"store {element_type_ir} {value.value}, {element_type_ir}* {element_ptr}, align 16")
         else:
             lit_type, value = self.visit(node.value) if node.value else "0"
@@ -154,30 +159,31 @@ class LLVMIRGenerator:
 
     def visit_ArrayDeclaration(self, node):
         element_type_ir = self.get_type(node.data_type[-1])
-        array_size = self.calculate_array_size(node.value)
+        dimensions = self.calculate_array_dimensions(node.value)
         var_name = f"x{self.var_count}"
         self.var_count += 1
-        self.emit(f"%{var_name} = alloca [{array_size} x {element_type_ir}], align 16")
+        array_type = f"[{dimensions[0]} x [{dimensions[1]} x {element_type_ir}]]"
+        
+        self.emit(f"%{var_name} = alloca {array_type}, align 16")
         
         # Initialize the array with values
         for i, row in enumerate(node.value):
             for j, value in enumerate(row):
                 element_ptr = f"%{var_name}_{i}_{j}_ptr"
-                self.emit(f"{element_ptr} = getelementptr inbounds [{array_size} x {element_type_ir}], [{array_size} x {element_type_ir}]* %{var_name}, i32 0, i32 {i * len(row) + j}")
+                self.emit(f"{element_ptr} = getelementptr inbounds {array_type}, {array_type}* %{var_name}, i32 0, i32 {i}, i32 {j}")
                 self.emit(f"store {element_type_ir} {value.value}, {element_type_ir}* {element_ptr}, align 16")
         
-        self.add_to_symbol_table(node.name, node.data_type, var_name)
-
+        self.add_to_symbol_table(node.name, [array_type, node.data_type], var_name)
 
     def visit_ArrayAccess(self, node):
         var_type, var_name = self.lookup_symbol(node.name)
-        element_type_ir = self.get_type(var_type[-1])
-        array_ptr = var_name
-        index_vals = [self.visit(index)[1] for index in node.index]
-        index_str = ', '.join(f"i32 {index}" for index in index_vals)
+        _array_shape_str, _array_shape_list = var_type
+        element_type_ir = self.get_type(_array_shape_list[-1])
         
-        element_ptr = f"%{array_ptr}_element_ptr"
-        self.emit(f"{element_ptr} = getelementptr inbounds [{self.calculate_array_size(node.index)} x {element_type_ir}], [{self.calculate_array_size(node.index)} x {element_type_ir}]* %{array_ptr}, {index_str}")
+        index_vals = [self.visit(index)[1] for index in node.index]
+        array_access_str = ", ".join([f"i32 {index_val}" for index_val in index_vals])
+        element_ptr = f"%{var_name}_element_ptr"
+        self.emit(f"{element_ptr} = getelementptr inbounds {_array_shape_str}, {_array_shape_str}* %{var_name}, i32 0, {array_access_str}")
         
         load_var = f"%{node.name}_tmp{self.temp_count}"
         self.temp_count += 1
@@ -186,17 +192,16 @@ class LLVMIRGenerator:
 
     def visit_ArrayAssignmentStatement(self, node):
         var_type, var_name = self.lookup_symbol(node.target)
-        element_type_ir = self.get_type(var_type[-1])
-        array_ptr = var_name
-        index_vals = [self.visit(index)[1] for index in node.index]
-        index_str = ', '.join(f"i32 {index}" for index in index_vals)
+        _array_shape_str, _array_shape_list = var_type
+        element_type_ir = self.get_type(_array_shape_list[-1])
         
-        element_ptr = f"%{array_ptr}_element_ptr"
-        self.emit(f"{element_ptr} = getelementptr inbounds [{self.calculate_array_size(node.value)} x {element_type_ir}], [{self.calculate_array_size(node.value)} x {element_type_ir}]* %{array_ptr}, {index_str}")
+        index_vals = [self.visit(index)[1] for index in node.index]
+        array_access_str = ", ".join([f"i32 {index_val}" for index_val in index_vals])
+        element_ptr = f"%{var_name}_element_ptr"
+        self.emit(f"{element_ptr} = getelementptr inbounds {_array_shape_str}, {_array_shape_str}* %{var_name}, i32 0, {array_access_str}")
         
         value_type, value_ir = self.visit(node.value)
         self.emit(f"store {element_type_ir} {value_ir}, {element_type_ir}* {element_ptr}, align 16")
-
 
     def visit_VariableReference(self, node):
         var_type, var_name = self.lookup_symbol(node.name)
