@@ -97,6 +97,20 @@ class ArrayAssignmentStatement(ASTNode):
     value: 'Expression'
 
 @dataclass
+class ArrayAllocation:
+    var_kind: str
+    name: str
+    data_type: List[Union[str, tuple]]
+    lengths: List[int] = field(default_factory=list)
+
+    def __post_init__(self):
+        self.extract_lengths()
+
+    def extract_lengths(self):
+        self.lengths = [dtype[1] for dtype in self.data_type if isinstance(dtype, tuple) and dtype[0] == 'array']
+
+
+@dataclass
 class ReturnStatement(ASTNode):
     value: Optional['Expression']
 
