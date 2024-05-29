@@ -85,6 +85,14 @@ class DoWhileStatement(ASTNode):
     body: StatementBlock
 
 @dataclass
+class BreakStatement(ASTNode):
+    pass
+
+@dataclass
+class ContinueStatement(ASTNode):
+    pass
+
+@dataclass
 class AssignmentStatement(ASTNode):
     target: str
     value: 'Expression'
@@ -108,7 +116,6 @@ class ArrayAllocation:
 
     def extract_lengths(self):
         self.lengths = [dtype[1] for dtype in self.data_type if isinstance(dtype, tuple) and dtype[0] == 'array']
-
 
 @dataclass
 class ReturnStatement(ASTNode):
