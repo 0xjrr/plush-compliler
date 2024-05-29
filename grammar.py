@@ -261,6 +261,8 @@ def p_expression(p):
                   | NOT expression
                   | IDENTIFIER
                   | array_access
+                  | BREAK
+                  | CONTINUE
                   | NUMBER
                   | FLOAT
                   | STRING
@@ -289,6 +291,10 @@ def p_expression(p):
             p[0] = ast_nodes.Literal(p[1])
         elif p.slice[1].type == 'TRUE' or p.slice[1].type == 'FALSE':
             p[0] = ast_nodes.Literal(p[1] == 'true')
+        elif p.slice[1].type == 'BREAK':
+            p[0] = ast_nodes.BreakStatement()
+        elif p.slice[1].type == 'CONTINUE':
+            p[0] = ast_nodes.ContinueStatement()
         else:
             p[0] = p[1]
 
@@ -532,9 +538,33 @@ if __name__ == "__main__":
     s = """
     function main(): int {
         var x : [[int]] := [[1, 2], [3, 4]];
+        var z : []int := [1, 2, 3];
+        var q : [][][]int := [[[1, 2], [3, 4]], [[5, 6], [7, 8]]];
+        var v : [2]int;
+        var w : [3][4]int;
         x[1][1] := 100;
         var y : int := x[1][1];
         return y;
+    }
+    """
+    result = parser.parse(s)
+    print(result)
+    print_tree.pretty_print(result)
+
+    print("Test break and continue")
+    print("Test 16")
+    s = """
+    function main(): int {
+        var x : int := 1;
+        while (x < 10) {
+            x++;
+            if (x == 5) {
+                break;
+            } else {
+                continue;
+            }
+        }
+        return x;
     }
     """
     result = parser.parse(s)
