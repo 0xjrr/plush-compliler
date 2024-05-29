@@ -55,6 +55,11 @@ class LLVMIRGenerator:
             if name in table:
                 return table[name]
         raise Exception(f"Undefined variable '{name}'")
+    
+    def calculate_array_size(self, value):
+        if isinstance(value, list):
+            return len(value) * self.calculate_array_size(value[0])
+        return 1
 
     def process_global_variables(self, globals):
         self.declaration_scope = "global"
@@ -79,58 +84,119 @@ class LLVMIRGenerator:
 
     def visit_VariableDeclaration(self, node):
         type_ir = self.get_type(node.data_type)
-        lit_type, value = self.visit(node.value) if node.value else "0"
-        if self.declaration_scope == "global":
-            var_vame = f"g{self.var_count}"
+        if isinstance(node.data_type, list):  # Check if it's an array
+            element_type_ir = self.get_type(node.data_type[-1])
+            dimensions = len(node.data_type) - 1
+            array_size = self.calculate_array_size(node.value)
+            var_name = f"x{self.var_count}"
             self.var_count += 1
-            if type_ir in ("float", "double"):
-                self.emit(f"@{var_vame} = global {type_ir} {float(value)}, align 8")
-            elif type_ir == "i1":
-                self.emit(f"@{var_vame} = global {type_ir} {int(value)}, align 1")
-            else:
-                self.emit(f"@{var_vame} = global {type_ir} {value}, align 4")
+            self.emit(f"%{var_name} = alloca [{array_size} x {element_type_ir}], align 16")
+            
+            # Initialize the array with values
+            for i, row in enumerate(node.value):
+                for j, value in enumerate(row):
+                    element_ptr = f"%{var_name}_{i}_{j}_ptr"
+                    self.emit(f"{element_ptr} = getelementptr inbounds [{array_size} x {element_type_ir}], [{array_size} x {element_type_ir}]* %{var_name}, i32 0, i32 {i * len(row) + j}")
+                    self.emit(f"store {element_type_ir} {value.value}, {element_type_ir}* {element_ptr}, align 16")
         else:
-            var_vame = f"x{self.var_count}"
-            self.var_count += 1
-            # Allocate memory for the variable
-            # Store the initial value
-            if node.value:
-                if isinstance(node.value, Literal):
-                    if type_ir in ("float", "double"):
-                        self.emit(f"%{var_vame} = alloca {type_ir}, align 8")
-                        self.emit(
-                            f"store {type_ir} {float(value)}, {type_ir}* %{var_vame}, align 8"
-                        )
-                    elif type_ir == "i1":
-                        self.emit(f"%{var_vame} = alloca {type_ir}, align 1")
-                        self.emit(
-                            f"store {type_ir} {int(value)}, {type_ir}* %{var_vame}, align 1"
-                        )
-                    elif type_ir == "i8":
-                        self.emit(f"%{var_vame} = {value}")
-                    else:
-                        self.emit(f"%{var_vame} = alloca {type_ir}, align 4")
-                        self.emit(
-                            f"store {type_ir} {value}, {type_ir}* %{var_vame}, align 4"
-                        )
+            lit_type, value = self.visit(node.value) if node.value else "0"
+            if self.declaration_scope == "global":
+                var_vame = f"g{self.var_count}"
+                self.var_count += 1
+                if type_ir in ("float", "double"):
+                    self.emit(f"@{var_vame} = global {type_ir} {float(value)}, align 8")
+                elif type_ir == "i1":
+                    self.emit(f"@{var_vame} = global {type_ir} {int(value)}, align 1")
                 else:
-                    if lit_type in ("float", "double"):
-                        self.emit(f"%{var_vame} = alloca {lit_type}, align 8")
-                        self.emit(
-                            f"store {lit_type} {value}, {lit_type}* %{var_vame}, align 8"
-                        )
-                    elif lit_type == "i1":
-                        self.emit(f"%{var_vame} = alloca {lit_type}, align 1")
-                        self.emit(
-                            f"store {lit_type} {value}, {lit_type}* %{var_vame}, align 1"
-                        )
+                    self.emit(f"@{var_vame} = global {type_ir} {value}, align 4")
+            else:
+                var_vame = f"x{self.var_count}"
+                self.var_count += 1
+                # Allocate memory for the variable
+                # Store the initial value
+                if node.value:
+                    if isinstance(node.value, Literal):
+                        if type_ir in ("float", "double"):
+                            self.emit(f"%{var_vame} = alloca {type_ir}, align 8")
+                            self.emit(
+                                f"store {type_ir} {float(value)}, {type_ir}* %{var_vame}, align 8"
+                            )
+                        elif type_ir == "i1":
+                            self.emit(f"%{var_vame} = alloca {type_ir}, align 1")
+                            self.emit(
+                                f"store {type_ir} {int(value)}, {type_ir}* %{var_vame}, align 1"
+                            )
+                        elif type_ir == "i8":
+                            self.emit(f"%{var_vame} = {value}")
+                        else:
+                            self.emit(f"%{var_vame} = alloca {type_ir}, align 4")
+                            self.emit(
+                                f"store {type_ir} {value}, {type_ir}* %{var_vame}, align 4"
+                            )
                     else:
-                        self.emit(f"%{var_vame} = alloca {lit_type}, align 4")
-                        self.emit(
-                            f"store {type_ir} {value}, {type_ir}* %{var_vame}, align 4"
-                        )
+                        if lit_type in ("float", "double"):
+                            self.emit(f"%{var_vame} = alloca {lit_type}, align 8")
+                            self.emit(
+                                f"store {lit_type} {value}, {lit_type}* %{var_vame}, align 8"
+                            )
+                        elif lit_type == "i1":
+                            self.emit(f"%{var_vame} = alloca {lit_type}, align 1")
+                            self.emit(
+                                f"store {lit_type} {value}, {lit_type}* %{var_vame}, align 1"
+                            )
+                        else:
+                            self.emit(f"%{var_vame} = alloca {lit_type}, align 4")
+                            self.emit(
+                                f"store {type_ir} {value}, {type_ir}* %{var_vame}, align 4"
+                            )
 
         self.add_to_symbol_table(node.name, node.data_type, var_vame)
+
+    def visit_ArrayDeclaration(self, node):
+        element_type_ir = self.get_type(node.data_type[-1])
+        array_size = self.calculate_array_size(node.value)
+        var_name = f"x{self.var_count}"
+        self.var_count += 1
+        self.emit(f"%{var_name} = alloca [{array_size} x {element_type_ir}], align 16")
+        
+        # Initialize the array with values
+        for i, row in enumerate(node.value):
+            for j, value in enumerate(row):
+                element_ptr = f"%{var_name}_{i}_{j}_ptr"
+                self.emit(f"{element_ptr} = getelementptr inbounds [{array_size} x {element_type_ir}], [{array_size} x {element_type_ir}]* %{var_name}, i32 0, i32 {i * len(row) + j}")
+                self.emit(f"store {element_type_ir} {value.value}, {element_type_ir}* {element_ptr}, align 16")
+        
+        self.add_to_symbol_table(node.name, node.data_type, var_name)
+
+
+    def visit_ArrayAccess(self, node):
+        var_type, var_name = self.lookup_symbol(node.name)
+        element_type_ir = self.get_type(var_type[-1])
+        array_ptr = var_name
+        index_vals = [self.visit(index)[1] for index in node.index]
+        index_str = ', '.join(f"i32 {index}" for index in index_vals)
+        
+        element_ptr = f"%{array_ptr}_element_ptr"
+        self.emit(f"{element_ptr} = getelementptr inbounds [{self.calculate_array_size(node.index)} x {element_type_ir}], [{self.calculate_array_size(node.index)} x {element_type_ir}]* %{array_ptr}, {index_str}")
+        
+        load_var = f"%{node.name}_tmp{self.temp_count}"
+        self.temp_count += 1
+        self.emit(f"{load_var} = load {element_type_ir}, {element_type_ir}* {element_ptr}, align 16")
+        return element_type_ir, load_var
+
+    def visit_ArrayAssignmentStatement(self, node):
+        var_type, var_name = self.lookup_symbol(node.target)
+        element_type_ir = self.get_type(var_type[-1])
+        array_ptr = var_name
+        index_vals = [self.visit(index)[1] for index in node.index]
+        index_str = ', '.join(f"i32 {index}" for index in index_vals)
+        
+        element_ptr = f"%{array_ptr}_element_ptr"
+        self.emit(f"{element_ptr} = getelementptr inbounds [{self.calculate_array_size(node.value)} x {element_type_ir}], [{self.calculate_array_size(node.value)} x {element_type_ir}]* %{array_ptr}, {index_str}")
+        
+        value_type, value_ir = self.visit(node.value)
+        self.emit(f"store {element_type_ir} {value_ir}, {element_type_ir}* {element_ptr}, align 16")
+
 
     def visit_VariableReference(self, node):
         var_type, var_name = self.lookup_symbol(node.name)
@@ -780,6 +846,40 @@ if __name__ == "__main__":
                         value=Literal(value="hello"),
                     ),
                     ReturnStatement(value=Literal(0)),
+                ],
+            )
+        ],
+    )
+    ast = Program(
+        global_variables=GlobalVariables([]),
+        declarations=[
+            MainFunctionStatement(
+                parameters=[None],
+                return_type="int",
+                body=[
+                    ArrayDeclaration(
+                        var_kind="var",
+                        name="x",
+                        data_type=["array", "array", "int"],
+                        value=[
+                            [Literal(value=1), Literal(value=2)],
+                            [Literal(value=3), Literal(value=4)],
+                        ],
+                    ),
+                    ArrayAssignmentStatement(
+                        target="x",
+                        index=[Literal(value=1), Literal(value=1)],
+                        value=Literal(value=100),
+                    ),
+                    VariableDeclaration(
+                        var_kind="var",
+                        name="y",
+                        data_type="int",
+                        value=ArrayAccess(
+                            name="x", index=[Literal(value=1), Literal(value=1)]
+                        ),
+                    ),
+                    ReturnStatement(value=VariableReference(name="y")),
                 ],
             )
         ],
