@@ -57,21 +57,39 @@ def p_variable_declaration(p):
                             | VAR IDENTIFIER COLON TYPE ASSIGN expression SEMICOLON
                             | VAR IDENTIFIER COLON TYPE SEMICOLON
                             | VAR IDENTIFIER COLON array_type ASSIGN array_initializer SEMICOLON
-                            | VAL IDENTIFIER COLON array_type ASSIGN array_initializer SEMICOLON"""
+                            | VAL IDENTIFIER COLON array_type ASSIGN array_initializer SEMICOLON
+                            | VAR IDENTIFIER COLON array_allocation_type SEMICOLON
+                            | VAL IDENTIFIER COLON array_allocation_type SEMICOLON"""
     if len(p) == 8 and isinstance(p[4], list):
         p[0] = ast_nodes.ArrayDeclaration(p[1], p[2], p[4], p[6])
     elif len(p) == 8:
         p[0] = ast_nodes.VariableDeclaration(p[1], p[2], p[4], p[6])
+    elif isinstance(p[4], list):
+        p[0] = ast_nodes.ArrayAllocation(p[1], p[2], p[4])
     else:
         p[0] = ast_nodes.VariableDeclaration(p[1], p[2], p[4], None)
 
 def p_array_type(p):
     """array_type : LBRACKET TYPE RBRACKET
-                  | LBRACKET array_type RBRACKET"""
+                  | LBRACKET array_type RBRACKET
+                  | LBRACKET RBRACKET array_type
+                  | LBRACKET RBRACKET TYPE"""
     if isinstance(p[2], list):
         p[0] = ["array"] + p[2]
-    else:
+    elif isinstance(p[2], str) and p[3] == ']':
         p[0] = ["array", p[2]]
+    elif isinstance(p[3], list):
+        p[0] = ["array"] + p[3]
+    else:
+        p[0] = ["array", p[3]]
+
+def p_array_allocation_type(p):
+    """array_allocation_type : LBRACKET NUMBER RBRACKET array_allocation_type
+                             | LBRACKET NUMBER RBRACKET TYPE"""
+    if isinstance(p[4], list):
+        p[0] = [("array", p[2])] + p[4]
+    else:
+        p[0] = [("array", p[2]), p[4]]
 
 def p_array_initializer(p):
     """array_initializer : LBRACKET expression_list RBRACKET
