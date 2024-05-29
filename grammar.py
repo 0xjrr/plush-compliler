@@ -188,7 +188,7 @@ def p_decrement_statement(p):
 
 def p_array_assignment_statement(p):
     "array_assignment_statement : array_access ASSIGN expression SEMICOLON"
-    p[0] = ast_nodes.ArrayAssignmentStatement(p[1], p[3])
+    p[0] = ast_nodes.ArrayAssignmentStatement(p[1].name, p[1].index, p[3])
     
 def p_expression_statement(p):
     "expression_statement : expression SEMICOLON"
@@ -502,9 +502,22 @@ if __name__ == "__main__":
 
     print("Test 14")
     s = """
-    function main(): string {
+    function main(): int {
         var x : string := "hello";
         return x;
+    }
+    """
+    result = parser.parse(s)
+    print(result)
+    print_tree.pretty_print(result)
+
+    print("Test 15")
+    s = """
+    function main(): int {
+        var x : [[int]] := [[1, 2], [3, 4]];
+        x[1][1] := 100;
+        var y : int := x[1][1];
+        return y;
     }
     """
     result = parser.parse(s)
