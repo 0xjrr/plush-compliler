@@ -871,6 +871,16 @@ if __name__ == "__main__":
                             [Literal(value=3), Literal(value=4)],
                         ],
                     ),
+                    ArrayDeclaration(
+                        var_kind="var",
+                        name="z",
+                        data_type=["array", "array", "array", "int"],
+                        value=[
+                            [[Literal(value=1), Literal(value=2)], [Literal(value=3), Literal(value=4)]],
+                            [[Literal(value=5), Literal(value=6)], [Literal(value=7), Literal(value=8)]],
+                        ],
+                        
+                    ),
                     ArrayAssignmentStatement(
                         target="x",
                         index=[Literal(value=1), Literal(value=1)],
