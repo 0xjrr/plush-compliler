@@ -569,12 +569,12 @@ class LLVMIRGenerator:
         return (left_type, result_var)
 
     def visit_Literal(self, node):
-        if isinstance(node.value, int):
+        if isinstance(node.value, bool):
+            return ("i1", f"{int(node.value)}")
+        elif isinstance(node.value, int):
             return ("i32", f"{node.value}")
         elif isinstance(node.value, float):
             return ("double", f"{node.value}")
-        elif isinstance(node.value, bool):
-            return ("i1", f"{int(node.value)}")
         elif isinstance(node.value, str):
             self.emit_global(f"@.str{self.var_count} = private unnamed_addr constant [{len(node.value) + 1} x i8] c\"{node.value}\\00\"")
             str_ptr = f"getelementptr inbounds [{len(node.value) + 1} x i8], [{len(node.value) + 1} x i8]* @.str{self.var_count}, i32 0, i32 0"
