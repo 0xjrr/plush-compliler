@@ -22,6 +22,7 @@ class LLVMIRGenerator:
         # self.emit("; ModuleID = 'my_program'")
         self.emit("declare dso_local i32 @printf(i8*, ...)")
         self.emit("declare dso_local i32 @scanf(i8*, ...)")
+        self.emit("declare double @pow(double, double)")
         self.emit("")
         self.push_symbol_table()  # Global scope
         self.process_global_variables(self.program.global_variables)
@@ -367,6 +368,13 @@ class LLVMIRGenerator:
     def visit_MainFunctionStatement(self, node):
         self.function_statement(node, "main")
 
+    def visit_FunctionDeclaration(self, node):
+        arg_list = [f"{self.get_type(param_type)}" for _, param_type in node.parameters]
+        self.function_signatures[node.name] = node.return_type
+        self.emit_global(
+            f"declare {self.get_type(node.return_type)} @{node.name}({', '.join(arg_list)})"
+        )
+
     def visit_StatementBlock(self, node):
         for stmt in node.statements:
             self.visit(stmt)
@@ -618,9 +626,7 @@ class LLVMIRGenerator:
 
         result_var = f"%tmp{self.temp_count}"
         self.temp_count += 1
-        if (
-            left_type in ("float", "double") or left_type in ("float", "double")
-        ) and node.operator in ["+", "-", "*", "/", "%", ">", "<", "=="]:
+        if (left_type in ("float", "double")) and node.operator in ["+", "-", "*", "/", "%", ">", "<", "==", ">=", "<="]:
             op_code = {
                 "+": "fadd",
                 "-": "fsub",
@@ -630,6 +636,9 @@ class LLVMIRGenerator:
                 ">": "fcmp ogt",
                 "<": "fcmp olt",
                 "==": "fcmp oeq",
+                ">=": "fcmp oge",
+                "<=": "fcmp ole",
+                "!=": "fcmp one"
             }.get(node.operator)
         else:
             op_code = {
@@ -643,14 +652,38 @@ class LLVMIRGenerator:
                 ">": "icmp sgt",
                 "<": "icmp slt",
                 "==": "icmp eq",
+                "!=": "icmp ne",
+                ">=": "icmp sge",
+                "<=": "icmp sle"
             }.get(node.operator)
 
-        if not op_code:
-            raise Exception(f"Unsupported operator: {node.operator}")
+        if node.operator == "^":  # Call power function
+            if left_type in ("float", "double"):
+                self.emit(
+                    f"{result_var} = call double @pow(double {left_var_name}, double {right_var_name})"
+                )
+            elif left_type == "i32":
+                tmp_double_left = f"%tmp{self.temp_count}"
+                self.temp_count += 1
+                tmp_double_right = f"%tmp{self.temp_count}"
+                self.temp_count += 1
+                tmp_double_result = f"%tmp{self.temp_count}"
+                self.temp_count += 1
 
-        self.emit(
-            f"{result_var} = {op_code} {left_type} {left_var_name}, {right_var_name}"
-        )
+                self.emit(f"{tmp_double_left} = sitofp i32 {left_var_name} to double")
+                self.emit(f"{tmp_double_right} = sitofp i32 {right_var_name} to double")
+                self.emit(
+                    f"{tmp_double_result} = call double @pow(double {tmp_double_left}, double {tmp_double_right})"
+                )
+                self.emit(f"{result_var} = fptosi double {tmp_double_result} to i32")
+            else:
+                raise Exception(f"Unsupported type for power operator: {left_type}")
+        elif not op_code:
+            raise Exception(f"Unsupported operator: {node.operator}")
+        else:
+            self.emit(
+                f"{result_var} = {op_code} {left_type} {left_var_name}, {right_var_name}"
+            )
         return (left_type, result_var)
 
     def visit_Literal(self, node):
@@ -1204,6 +1237,70 @@ if __name__ == "__main__":
                     ),
                 ],
             )
+        ],
+    )
+    ast = Program(
+        global_variables=GlobalVariables([]),
+        declarations=[
+            MainFunctionStatement(
+                parameters=[None],
+                return_type="int",
+                body=[
+                    VariableDeclaration(
+                        var_kind="var",
+                        name="x",
+                        data_type="int",
+                        value=Literal(value=2),
+                    ),
+                    VariableDeclaration(
+                        var_kind="var",
+                        name="y",
+                        data_type="int",
+                        value=BinaryExpression(
+                            operator="^",
+                            left=VariableReference(name="x"),
+                            right=Literal(value=3),
+                        ),
+                    ),
+                    ReturnStatement(value=VariableReference(name="y")),
+                ],
+            )
+        ],
+    )
+
+    ast = Program(
+        global_variables=GlobalVariables([]),
+        declarations=[
+            FunctionDeclaration(
+                name="test", parameters=[("x", "int"), ("y", "int")], return_type="int"
+            ),
+            MainFunctionStatement(
+                parameters=[None],
+                return_type="int",
+                body=[
+                    VariableDeclaration(
+                        var_kind="var",
+                        name="x",
+                        data_type="int",
+                        value=Literal(value=1),
+                    ),
+                    VariableDeclaration(
+                        var_kind="var",
+                        name="y",
+                        data_type="int",
+                        value=Literal(value=2),
+                    ),
+                    ReturnStatement(
+                        value=FunctionCall(
+                            name="test",
+                            arguments=[
+                                VariableReference(name="x"),
+                                VariableReference(name="y"),
+                            ],
+                        )
+                    ),
+                ],
+            ),
         ],
     )
     generator = LLVMIRGenerator(ast)
