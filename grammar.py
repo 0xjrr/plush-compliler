@@ -105,8 +105,16 @@ def p_array_initializer_list(p):
         p[0] = [p[1]]
 
 def p_function_declaration(p):
-    """function_declaration : FUNCTION IDENTIFIER LPAREN parameter_list RPAREN COLON TYPE statement_block
-                            | FUNCTION MAIN LPAREN parameter_list RPAREN COLON TYPE statement_block"""
+    """function_declaration : FUNCTION IDENTIFIER LPAREN parameter_list RPAREN COLON TYPE SEMICOLON
+                            | function_statement"""
+    if len(p) == 9:  # Function declaration 
+        p[0] = ast_nodes.FunctionDeclaration(p[2], p[4], p[7])
+    else:  # Function statement 
+        p[0] = p[1]
+
+def p_function_statement(p):
+    """function_statement : FUNCTION IDENTIFIER LPAREN parameter_list RPAREN COLON TYPE statement_block
+                          | FUNCTION MAIN LPAREN parameter_list RPAREN COLON TYPE statement_block"""
     if p[2] == 'main':
         p[0] = ast_nodes.MainFunctionStatement(p[4], p[7], p[8])
     else:
@@ -124,8 +132,13 @@ def p_parameter_list(p):
         p[0] = []
 
 def p_parameter(p):
-    "parameter : IDENTIFIER COLON TYPE"
-    p[0] = (p[1], p[3])
+    """parameter : IDENTIFIER COLON TYPE
+                 | VAL IDENTIFIER COLON TYPE
+                 | VAR IDENTIFIER COLON TYPE"""
+    if len(p) == 4:
+        p[0] = (p[1], p[3])
+    else:
+        p[0] = (p[2], p[4])
 
 def p_statement_block(p):
     "statement_block : LBRACE statement_list RBRACE"
@@ -170,12 +183,20 @@ def p_if_statement(p):
         p[0] = ast_nodes.IfStatement(p[3], p[5], None)
 
 def p_while_statement(p):
-    "while_statement : WHILE LPAREN expression RPAREN statement_block"
-    p[0] = ast_nodes.WhileStatement(p[3], p[5])
+    """while_statement : WHILE LPAREN expression RPAREN statement_block
+                       | WHILE expression statement_block"""
+    if len(p) == 6:
+        p[0] = ast_nodes.WhileStatement(p[3], p[5])
+    else:
+        p[0] = ast_nodes.WhileStatement(p[2], p[3])
 
 def p_do_while_statement(p):
-    "do_while_statement : DO statement_block WHILE LPAREN expression RPAREN SEMICOLON"
-    p[0] = ast_nodes.DoWhileStatement(p[5], p[2])
+    """do_while_statement : DO statement_block WHILE LPAREN expression RPAREN SEMICOLON
+                          | DO statement_block WHILE expression SEMICOLON"""
+    if len(p) == 8:
+        p[0] = ast_nodes.DoWhileStatement(p[5], p[2])
+    else:
+        p[0] = ast_nodes.DoWhileStatement(p[4], p[2])
 
 def p_assignment_statement(p):
     """assignment_statement : IDENTIFIER ASSIGN expression SEMICOLON
@@ -253,7 +274,7 @@ def p_expression(p):
                   | expression OR expression
                   | expression BITWISE_AND expression
                   | expression BITWISE_OR expression
-                  | expression BITWISE_XOR expression
+                  | expression SQUARE expression
                   | expression BITWISE_NOT expression
                   | expression BITWISE_LSHIFT expression
                   | expression BITWISE_RSHIFT expression
@@ -593,6 +614,69 @@ if __name__ == "__main__":
         } else {
             return 0;
         }
+    }
+    """
+    result = parser.parse(s)
+    print(result)
+    print_tree.pretty_print(result)
+
+    print("Test 18")
+    s = """
+    function main(): int {
+        var a : int := 1;
+        var b : int := 2;
+        while a < 10 {
+            a++;
+            b--;
+        }
+        do {
+            a--;
+            b++;
+        } while a > 0;
+        return a + b;
+    }
+    """
+    result = parser.parse(s)
+    print(result)
+    print_tree.pretty_print(result)
+
+    print("Test 19")
+    s = """
+    function main(): int {
+        var x : int := 2;
+        var y : int := x ^ 3;
+        
+        return y;
+    }
+    """
+    result = parser.parse(s)
+    print(result)
+    print_tree.pretty_print(result)
+
+    print("Test 20")
+    s = """
+    function test(var x: int, val y: int): int {
+        return x + y;
+    }
+
+    function main(): int {
+        var x : int := 1;
+        var y : int := 2;
+        return test(x, y);
+    }
+    """
+    result = parser.parse(s)
+    print(result)
+    print_tree.pretty_print(result)
+
+    print("Test 21")
+    s = """
+    function test(x: int, y: int): int;
+
+    function main(): int {
+        var x : int := 1;
+        var y : int := 2;
+        return test(x, y);
     }
     """
     result = parser.parse(s)
