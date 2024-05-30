@@ -190,6 +190,20 @@ class LLVMIRGenerator:
             self.emit(f"{element_ptr} = getelementptr inbounds {array_type}, {array_type}* %{var_name}, {indices_str}")
             self.emit(f"store {element_type_ir} {value.value}, {element_type_ir}* {element_ptr}, align 16")
 
+    def visit_ArrayAllocation(self, node: ArrayAllocation):
+        element_type_ir = self.get_type(node.data_type[-1])
+        dimensions = node.lengths
+        var_name = f"x{self.var_count}"
+        self.var_count += 1
+        # dimensions is a list of the array dimensions
+        array_type = self.calculate_array_type(element_type_ir, dimensions)
+        
+        self.emit(f"%{var_name} = alloca {array_type}, align 16")
+        
+        # Initialize the array with values
+        self.process_value(node.value, [], var_name, array_type, element_type_ir)
+        
+        self.add_to_symbol_table(node.name, [array_type, node.data_type], var_name)
 
     def visit_ArrayDeclaration(self, node):
         element_type_ir = self.get_type(node.data_type[-1])
