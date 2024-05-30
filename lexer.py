@@ -151,8 +151,8 @@ def t_FLOAT(t):
 
 # Number literals
 def t_NUMBER(t):
-    r"\d+"
-    t.value = int(t.value)
+    r"\d+[\d_]*"
+    t.value = int(t.value.replace('_', ''))
     return t
 
 

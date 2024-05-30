@@ -586,6 +586,8 @@ if __name__ == "__main__":
         var z : bool := !x || y;
         z := !z;
 
+        var c : int := 1__000______0_______0____;
+
         if (x && y) {
             return 1;
         } else {
@@ -596,6 +598,6 @@ if __name__ == "__main__":
     result = parser.parse(s)
     print(result)
     print_tree.pretty_print(result)
-    
+
 
 
