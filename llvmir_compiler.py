@@ -453,6 +453,29 @@ class LLVMIRGenerator:
             self.emit(f"br label %{_return_code_block_var}")
         else:
             self.emit("ret void")
+    
+    def visit_UnaryExpression(self, node):
+        operand_type, operand_ir = self.visit(node.operand)
+        result_var = f"%tmp{self.temp_count}"
+        self.temp_count += 1
+
+        if node.operator == "!":
+            if operand_type != "i1":
+                raise Exception(f"Invalid operand type for unary '!': {operand_type}")
+            self.emit(f"{result_var} = xor i1 {operand_ir}, true")
+            return ("i1", result_var)
+        elif node.operator == "-":
+            if operand_type == "i32":
+                self.emit(f"{result_var} = sub i32 0, {operand_ir}")
+                return ("i32", result_var)
+            elif operand_type == "double":
+                self.emit(f"{result_var} = fsub double 0.0, {operand_ir}")
+                return ("double", result_var)
+            else:
+                raise Exception(f"Invalid operand type for unary '-': {operand_type}")
+        else:
+            raise Exception(f"Unsupported unary operator: {node.operator}")
+
 
     def visit_BinaryExpression(self, node):
         left_type, left = (
