@@ -33,9 +33,10 @@ class MainFunctionStatement(ASTNode):
     body: 'StatementBlock'
 
 @dataclass
-class FunctionCall(ASTNode):
+class FunctionDeclaration(ASTNode):
     name: str
-    arguments: List['Expression']
+    parameters: List['Parameter']
+    return_type: str
 
 @dataclass
 class VariableDeclaration(ASTNode):
