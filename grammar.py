@@ -542,6 +542,12 @@ if __name__ == "__main__":
         var q : [][][]int := [[[1, 2], [3, 4]], [[5, 6], [7, 8]]];
         var v : [2]int;
         var w : [3][4]int;
+        w[1][1] := 100;
+        w[2][2] := 200;
+        w[1][2] := 300;
+        w[2][3] := 400;
+        v[0] := 100;
+        v[1] := 200;
         x[1][1] := 100;
         var y : int := x[1][1];
         return y;
@@ -570,4 +576,26 @@ if __name__ == "__main__":
     result = parser.parse(s)
     print(result)
     print_tree.pretty_print(result)
+
+    print("Test 17")
+    s = """
+    function main(): int {
+        var x : bool := true;
+        var y : bool := false;
+
+        var z : bool := !x || y;
+        z := !z;
+
+        if (x && y) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+    """
+    result = parser.parse(s)
+    print(result)
+    print_tree.pretty_print(result)
+    
+
 
