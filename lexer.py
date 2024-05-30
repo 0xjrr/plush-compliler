@@ -11,6 +11,7 @@ tokens = [
     "TIMES",
     "DIVIDE",
     "MOD",
+    "SQUARE",  
     # Parentheses and braces
     "LPAREN",
     "RPAREN",
@@ -72,6 +73,7 @@ t_MINUS = r"-"
 t_TIMES = r"\*"
 t_DIVIDE = r"/"
 t_MOD = r"%"
+t_SQUARE = r"\^"
 
 t_LPAREN = r"\("
 t_RPAREN = r"\)"
@@ -100,7 +102,6 @@ t_ASSIGN = r":="
 # Bitwise operators
 t_BITWISE_AND = r"&"
 t_BITWISE_OR = r"\|"
-t_BITWISE_XOR = r"\^"
 t_BITWISE_NOT = r"~"
 t_BITWISE_LSHIFT = r"<<"
 t_BITWISE_RSHIFT = r">>"
