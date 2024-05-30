@@ -175,6 +175,13 @@ class LLVMIRGenerator:
 
         self.add_to_symbol_table(node.name, node.data_type, var_vame)
     
+    def calculate_alignment(self, type_str):
+        if type_str in ("float", "double"):
+            return "align 8"
+        elif type_str == "i1":
+            return "align 1"
+        return "align 4"
+    
     def calculate_array_type(self, element_type, dimensions):
         if dimensions:
             return f"[{dimensions[0]} x {self.calculate_array_type(element_type, dimensions[1:])}]"
@@ -190,6 +197,13 @@ class LLVMIRGenerator:
             self.emit(f"{element_ptr} = getelementptr inbounds {array_type}, {array_type}* %{var_name}, {indices_str}")
             self.emit(f"store {element_type_ir} {value.value}, {element_type_ir}* {element_ptr}, align 16")
 
+    def is_last_line_block_statement(self):
+        """Check if the last line of the output is a block statement."""
+        if not self.output:
+            return False
+        last_line = self.output[-1].strip()
+        return last_line.endswith(":")
+    
     def visit_ArrayAllocation(self, node: ArrayAllocation):
         element_type_ir = self.get_type(node.data_type[-1])
         dimensions = node.lengths
@@ -199,9 +213,6 @@ class LLVMIRGenerator:
         array_type = self.calculate_array_type(element_type_ir, dimensions)
         
         self.emit(f"%{var_name} = alloca {array_type}, align 16")
-        
-        # Initialize the array with values
-        self.process_value(node.value, [], var_name, array_type, element_type_ir)
         
         self.add_to_symbol_table(node.name, [array_type, node.data_type], var_name)
 
@@ -256,14 +267,14 @@ class LLVMIRGenerator:
         tmp_var = f"%{node.name}_tmp{self.temp_count}"
         self.temp_count += 1
         if var_name.startswith("g"):
-            self.emit(f"{tmp_var} = load {var_type}, {var_type}* @{var_name}, align 4")
+            self.emit(f"{tmp_var} = load {var_type}, {var_type}* @{var_name}, {self.calculate_alignment(var_type)}")
         elif var_name.startswith("x"):
-            self.emit(f"{tmp_var} = load {var_type}, {var_type}* %{var_name}, align 4")
+            self.emit(f"{tmp_var} = load {var_type}, {var_type}* %{var_name}, {self.calculate_alignment(var_type)}")
         elif var_name.startswith("p"):
             return (var_type, f"%{var_name}")
         else:
-            self.emit(f"{tmp_var} = alloca {var_type}, align 4")
-            self.emit(f"store {var_type} %{var_name}, {var_type}* {tmp_var}, align 4")
+            self.emit(f"{tmp_var} = alloca {var_type}, {self.calculate_alignment(var_type)}")
+            self.emit(f"store {var_type} %{var_name}, {var_type}* {tmp_var}, {self.calculate_alignment(var_type)}")
         return (var_type, tmp_var)
 
     def visit_FunctionCall(self, node):
@@ -330,6 +341,12 @@ class LLVMIRGenerator:
             self.indentation -= 1
         else:
             _return_block = self.lookup_symbol("return_code_block")[1]
+            # Check if the last line was an empty block
+            if self.is_last_line_block_statement():
+                self.indentation += 1
+                self.emit(f"br label %{_return_block}")
+                self.indentation -= 1
+            
             self.emit(f"{_return_block}:")
             self.indentation += 1
             ret_type, ret_val = self.lookup_symbol("return")
@@ -504,6 +521,51 @@ class LLVMIRGenerator:
             right_var_type, right_var_name = right  # Reference Unpack tuple
         else:
             right_var_type, right_var_name = right_type, right  # Is literal
+
+        if node.operator in ("||", "&&"):
+            if left_var_type != "i1" or right_var_type != "i1":
+                raise Exception(f"Invalid operand types for logical operator '{node.operator}': {left_var_type} and {right_var_type}")
+
+            true_block = f"true_block{self.temp_count}"
+            false_block = f"false_block{self.temp_count}"
+            end_block = f"end_block{self.temp_count}"
+            result_var = f"%tmp{self.temp_count}"
+            self.temp_count += 1
+
+            if node.operator == "||":
+                self.emit(f"br i1 {left_var_name}, label %{true_block}, label %{false_block}")
+                self.indentation -= 1
+                self.emit(f"{true_block}:")
+                self.indentation += 1
+                self.emit(f"br label %{end_block}")
+                self.indentation -= 1
+
+                self.emit(f"{false_block}:")
+                self.indentation += 1
+                self.emit(f"br label %{end_block}")
+                self.indentation -= 1
+
+                self.emit(f"{end_block}:")
+                self.indentation += 1
+                self.emit(f"{result_var} = phi i1 [ true, %{true_block} ], [ {right_var_name}, %{false_block} ]")
+            elif node.operator == "&&":
+                self.emit(f"br i1 {left_var_name}, label %{false_block}, label %{true_block}")
+                self.indentation -= 1
+                self.emit(f"{true_block}:")
+                self.indentation += 1
+                self.emit(f"br label %{end_block}")
+                self.indentation -= 1
+
+                self.emit(f"{false_block}:")
+                self.indentation += 1
+                self.emit(f"br label %{end_block}")
+                self.indentation -= 1
+
+                self.emit(f"{end_block}:")
+                self.indentation += 1
+                self.emit(f"{result_var} = phi i1 [ false, %{false_block} ], [ {right_var_name}, %{true_block} ]")
+
+            return ("i1", result_var)
 
         # Handle type promotion
         if left_type == "float" and right_type == "double":
@@ -996,6 +1058,150 @@ if __name__ == "__main__":
                         ),
                     ),
                     ReturnStatement(value=VariableReference(name="y")),
+                ],
+            )
+        ],
+    )
+    ast = Program(
+        global_variables=GlobalVariables([]),
+        declarations=[
+            MainFunctionStatement(
+                parameters=[None],
+                return_type="int",
+                body=[
+                    ArrayDeclaration(
+                        var_kind="var",
+                        name="x",
+                        data_type=["array", "array", "int"],
+                        value=[
+                            [Literal(value=1), Literal(value=2)],
+                            [Literal(value=3), Literal(value=4)],
+                        ],
+                    ),
+                    ArrayDeclaration(
+                        var_kind="var",
+                        name="z",
+                        data_type=["array", "int"],
+                        value=[Literal(value=1), Literal(value=2), Literal(value=3)],
+                    ),
+                    ArrayDeclaration(
+                        var_kind="var",
+                        name="q",
+                        data_type=["array", "array", "array", "int"],
+                        value=[
+                            [
+                                [Literal(value=1), Literal(value=2)],
+                                [Literal(value=3), Literal(value=4)],
+                            ],
+                            [
+                                [Literal(value=5), Literal(value=6)],
+                                [Literal(value=7), Literal(value=8)],
+                            ],
+                        ],
+                    ),
+                    ArrayAllocation(
+                        var_kind="var",
+                        name="v",
+                        data_type=[("array", 2), "int"],
+                        lengths=[2],
+                    ),
+                    ArrayAllocation(
+                        var_kind="var",
+                        name="w",
+                        data_type=[("array", 3), ("array", 4), "int"],
+                        lengths=[3, 4],
+                    ),
+                    ArrayAssignmentStatement(
+                        target="w",
+                        index=[Literal(value=1), Literal(value=1)],
+                        value=Literal(value=100),
+                    ),
+                    ArrayAssignmentStatement(
+                        target="w",
+                        index=[Literal(value=2), Literal(value=2)],
+                        value=Literal(value=200),
+                    ),
+                    ArrayAssignmentStatement(
+                        target="w",
+                        index=[Literal(value=1), Literal(value=2)],
+                        value=Literal(value=300),
+                    ),
+                    ArrayAssignmentStatement(
+                        target="w",
+                        index=[Literal(value=2), Literal(value=3)],
+                        value=Literal(value=400),
+                    ),
+                    ArrayAssignmentStatement(
+                        target="v", index=[Literal(value=0)], value=Literal(value=100)
+                    ),
+                    ArrayAssignmentStatement(
+                        target="v", index=[Literal(value=1)], value=Literal(value=200)
+                    ),
+                    ArrayAssignmentStatement(
+                        target="x",
+                        index=[Literal(value=1), Literal(value=1)],
+                        value=Literal(value=100),
+                    ),
+                    VariableDeclaration(
+                        var_kind="var",
+                        name="y",
+                        data_type="int",
+                        value=ArrayAccess(
+                            name="x", index=[Literal(value=1), Literal(value=1)]
+                        ),
+                    ),
+                    ReturnStatement(value=VariableReference(name="y")),
+                ],
+            )
+        ],
+    )
+
+    ast = Program(
+        global_variables=GlobalVariables([]),
+        declarations=[
+            MainFunctionStatement(
+                parameters=[None],
+                return_type="int",
+                body=[
+                    VariableDeclaration(
+                        var_kind="var",
+                        name="x",
+                        data_type="bool",
+                        value=Literal(value=True),
+                    ),
+                    VariableDeclaration(
+                        var_kind="var",
+                        name="y",
+                        data_type="bool",
+                        value=Literal(value=False),
+                    ),
+                    VariableDeclaration(
+                        var_kind="var",
+                        name="z",
+                        data_type="bool",
+                        value=BinaryExpression(
+                            operator="||",
+                            left=UnaryExpression(
+                                operator="!", operand=VariableReference(name="x")
+                            ),
+                            right=VariableReference(name="y"),
+                        ),
+                    ),
+                    AssignmentStatement(
+                        target="z",
+                        value=UnaryExpression(
+                            operator="!", operand=VariableReference(name="z")
+                        ),
+                    ),
+                    IfStatement(
+                        condition=BinaryExpression(
+                            operator="&&",
+                            left=VariableReference(name="x"),
+                            right=VariableReference(name="y"),
+                        ),
+                        then_block=[ReturnStatement(value=Literal(value=1))],
+                        else_block=[ReturnStatement(value=Literal(value=0))],
+                    ),
                 ],
             )
         ],
