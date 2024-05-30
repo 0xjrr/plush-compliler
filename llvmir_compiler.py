@@ -55,6 +55,20 @@ class LLVMIRGenerator:
                 return table[name]
         raise Exception(f"Undefined variable '{name}'")
 
+    def add_while_blocks_to_symbol_table(self, while_condition, while_body, while_end):
+        self.symbol_table_stack[-1]["while_condition"] = while_condition
+        self.symbol_table_stack[-1]["while_body"] = while_body
+        self.symbol_table_stack[-1]["while_end"] = while_end
+
+    def get_while_blocks(self):
+        for table in reversed(self.symbol_table_stack):
+            if table.get("while_condition"):
+                return (
+                    table.get("while_condition"),
+                    table.get("while_body"),
+                    table.get("while_end"),
+                )
+
     def calculate_array_size(self, value):
         if isinstance(value, list):
             return len(value) * self.calculate_array_size(value[0])
@@ -326,33 +340,49 @@ class LLVMIRGenerator:
         for stmt in node.statements:
             self.visit(stmt)
 
+    def visit_ExpressionStatement(self, node):
+        self.visit(node.expression)
+
+    def visit_BreakStatement(self, node):
+        _, _, end_block = self.get_while_blocks()
+        self.emit(f"br label %{end_block}")
+    
+    def visit_ContinueStatement(self, node):
+        cond_block, _, _ = self.get_while_blocks()
+        self.emit(f"br label %{cond_block}")
+
     def visit_IfStatement(self, node):
         self.push_symbol_table()  # New scope for if block
         _, cond_var = self.visit(node.condition)
         if_count = self.temp_count
         self.temp_count += 1
         self.emit(f"br i1 {cond_var}, label %then{if_count}, label %else{if_count}")
-
+        if self.indentation > 0:
+            self.indentation -= 1
         self.emit(f"then{if_count}:")
         self.indentation += 1
         self.visit(node.then_block)
-        self.indentation -= 1
         self.emit(f"br label %ifcont{if_count}")
+        self.indentation -= 1
         self.emit(f"else{if_count}:")
         self.indentation += 1
         if node.else_block:
             self.visit(node.else_block)
-        self.indentation -= 1
         self.emit(f"br label %ifcont{if_count}")
 
+        self.indentation -= 1
         self.emit(f"ifcont{if_count}:")
+        self.indentation += 1
         self.pop_symbol_table()
 
     def visit_WhileStatement(self, node):
         self.push_symbol_table()  # New scope for while block
         _while_count = self.temp_count
         self.temp_count += 1
+        self.add_while_blocks_to_symbol_table(f"cond{_while_count}", f"body{_while_count}", f"end{_while_count}")
         self.emit(f"br label %cond{_while_count}")
+        if self.indentation > 0:
+            self.indentation -= 1
         self.emit(f"cond{_while_count}:")
         self.indentation += 1
         cond_var = self.visit(node.condition)
@@ -367,17 +397,23 @@ class LLVMIRGenerator:
         self.indentation -= 1
 
         self.emit(f"end{_while_count}:")
+        self.indentation += 1
         self.pop_symbol_table()
 
     def visit_DoWhileStatement(self, node):
         self.push_symbol_table()
         _do_while_count = self.temp_count
         self.temp_count += 1
+        self.add_while_blocks_to_symbol_table(f"cond{_do_while_count}", f"body{_do_while_count}", f"end{_do_while_count}")
         self.emit(f"br label %body{_do_while_count}")
+        self.indentation -= 1
         self.emit(f"body{_do_while_count}:")
         self.indentation += 1
         self.visit(node.body)
+        self.emit(f"br label %cond{_do_while_count}")
         self.indentation -= 1
+        self.emit(f"cond{_do_while_count}:")
+        self.indentation += 1
         cond_var = self.visit(node.condition)
         cond_var_type, cond_var_name = cond_var
         self.emit(f"br i1 {cond_var_name}, label %body{_do_while_count}, label %end{_do_while_count}")
