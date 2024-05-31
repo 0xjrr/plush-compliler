@@ -116,12 +116,21 @@ def p_function_statement(p):
     """function_statement : FUNCTION IDENTIFIER LPAREN parameter_list RPAREN COLON TYPE statement_block
                           | FUNCTION MAIN LPAREN parameter_list RPAREN COLON TYPE statement_block
                           | FUNCTION MAIN LPAREN VAL ARGSTRING RPAREN COLON TYPE statement_block
-                          | FUNCTION MAIN LPAREN VAR ARGSTRING RPAREN COLON TYPE statement_block"""
+                          | FUNCTION MAIN LPAREN VAR ARGSTRING RPAREN COLON TYPE statement_block
+                          | FUNCTION MAIN LPAREN parameter_list RPAREN statement_block
+                          | FUNCTION MAIN LPAREN VAR ARGSTRING RPAREN statement_block
+                          | FUNCTION MAIN LPAREN VAL ARGSTRING RPAREN statement_block"""
     if p[2] == 'main':
-        if p[4] == 'val' or p[4] == 'var':
-            p[0] = ast_nodes.MainFunctionStatement([None], p[8], p[9])
+        if p[7] == ":" or p[6] == ":":
+            if p[4] == 'val' or p[4] == 'var':
+                p[0] = ast_nodes.MainFunctionStatement([None], p[8], p[9])
+            else:
+                p[0] = ast_nodes.MainFunctionStatement(p[4], p[7], p[8])
         else:
-            p[0] = ast_nodes.MainFunctionStatement(p[4], p[7], p[8])
+            if p[4] == 'val' or p[4] == 'var':
+                p[0] = ast_nodes.MainFunctionStatement([None], "void", p[7])
+            else:
+                p[0] = ast_nodes.MainFunctionStatement(p[4], "void", p[6])
     else:
         p[0] = ast_nodes.FunctionStatement(p[2], p[4], p[7], p[8])
 
@@ -196,11 +205,20 @@ def p_return_statement(p):
 
 def p_if_statement(p):
     """if_statement : IF LPAREN expression RPAREN statement_block ELSE statement_block
-                    | IF LPAREN expression RPAREN statement_block"""
-    if len(p) == 8:
-        p[0] = ast_nodes.IfStatement(p[3], p[5], p[7])
-    else:
-        p[0] = ast_nodes.IfStatement(p[3], p[5], None)
+                    | IF LPAREN expression RPAREN statement_block
+                    | IF expression statement_block ELSE statement_block
+                    | IF expression statement_block"""
+    if p[1] == 'if':
+        if p[2] == '(':
+            if len(p) == 8:
+                p[0] = ast_nodes.IfStatement(p[3], p[5], p[7])
+            else:
+                p[0] = ast_nodes.IfStatement(p[3], p[5], None)
+        else:
+            if len(p) == 6:
+                p[0] = ast_nodes.IfStatement(p[2], p[3], p[5])
+            else:
+                p[0] = ast_nodes.IfStatement(p[2], p[3], None)
 
 def p_while_statement(p):
     """while_statement : WHILE LPAREN expression RPAREN statement_block
@@ -300,6 +318,8 @@ def p_expression(p):
                   | expression BITWISE_RSHIFT expression
                   | LPAREN expression RPAREN
                   | NOT expression
+                  | MINUS NUMBER %prec NOT
+                  | MINUS FLOAT %prec NOT
                   | IDENTIFIER
                   | array_access
                   | BREAK
@@ -319,6 +339,8 @@ def p_expression(p):
             p[0] = ast_nodes.BinaryExpression(p[2], p[1], p[3])
     elif len(p) == 3 and p[1] == '!':
         p[0] = ast_nodes.UnaryExpression(p[1], p[2])
+    elif len(p) == 3 and p[1] == '-':
+        p[0] = ast_nodes.Literal(-1 * p[2])
     elif len(p) == 2 and isinstance(p[1], ast_nodes.ArrayAccess):
         p[0] = p[1]
     elif len(p) == 5:
@@ -733,5 +755,30 @@ if __name__ == "__main__":
     # print_tree.pretty_print(result)
     json_conv = json_converter.convert_ast_to_json(result)
     print(json_conv)
+
+    print("Test 24")
+    s = """
+        val actual_min : int := -9;
+        val actual_max : int := 9;
+
+        function maxRangeSquared(var mi:int, val ma:int) : int {
+            var current_max : int := mi ^ 2;
+            while mi <= ma {
+                val current_candidate : int := mi ^ 2;
+                if current_candidate > current_max {
+                    current_max := current_candidate;
+                }
+            } 
+            maxRangeSquared := current_max; # This line returns the current max!
+        }
+
+
+        function main(val args:[string]) {
+            val result : int := maxRangeSquared(actual_min, actual_max);
+            print_int(result);
+        }
+    """
+    result = parser.parse(s)
+    print(result)
 
 
