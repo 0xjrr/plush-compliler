@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Initialize variables
+print_tree=false
+filename=""
+
+# Parse arguments
+for arg in "$@"; do
+    if [[ "$arg" == "--tree" ]]; then
+        print_tree=true
+    else
+        filename="$arg"
+    fi
+done
+
+# Ensure a filename is provided
+if [ -z "$filename" ]; then
+    echo "No PLush file specified."
+    exit 1
+fi
+
+# Call the Python compiler
+if [ "$print_tree" = true ]; then
+    python3 compiler.py --tree "$filename"
+else
+    python3 compiler.py "$filename"
+fi
