@@ -68,6 +68,13 @@ tokens = [
     "RETURN",
     # Argstring
     "ARGSTRING",
+    # Import
+    "IMPORT",
+    # Print
+    "PRINTINT",
+    "PRINTDOUBLE",
+    "PRINTSTRING",
+    "PRINTF",
 ]
 
 t_PLUS = r"\+"
@@ -142,6 +149,10 @@ reserved = {
     "main": "MAIN",
     "return": "RETURN",
     "import": "IMPORT",
+    "print_int": "PRINTINT",
+    "print_double": "PRINTDOUBLE",
+    "print_string": "PRINTSTRING",
+    "printf": "PRINTF",
 }
 
 
