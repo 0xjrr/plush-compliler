@@ -283,6 +283,8 @@ Before you can use the PLush Compiler, you need to set up your environment:
 1. **Clone the Repository**:
    ```bash
    git clone https://github.com/0xjrr/plush-compiler.git
+   or
+   git clone https://git.alunos.di.fc.ul.pt/fc62761/plush-compliler.git
    ```
 2. **Setup** (assuming a UNIX-like environment):
    ```bash
