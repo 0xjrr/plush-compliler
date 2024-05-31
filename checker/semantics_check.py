@@ -4,10 +4,9 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from tree.ast_nodes import *
-
 class TypeChecker:
     def __init__(self):
-        self.symbol_table_stack = [{'immutable_vars':[]}]  # A stack of dictionaries for scoping
+        self.symbol_table_stack = [{'immutable_vars': []}]  # A stack of dictionaries for scoping
         self.functions = {}  # Function name to function return type
         self.current_function = None
         self.errors = []
@@ -22,7 +21,10 @@ class TypeChecker:
     def check_global_variables(self, globals):
         if globals:
             for var_decl in globals.declarations:
-                self.check_global_variable_declaration(var_decl)
+                if isinstance(var_decl, ArrayDeclaration):
+                    self.check_array_declaration(var_decl)
+                else:
+                    self.check_global_variable_declaration(var_decl)
     
     def check_global_variable_declaration(self, var_decl):
         # Check if variable already declared in global scope
@@ -42,8 +44,15 @@ class TypeChecker:
             if var_decl.value:
                 self.check_expression(var_decl.value)
         
-
-        
+    def check_array_declaration(self, array_decl):
+        # Check if array already declared in global scope
+        if array_decl.name in self.symbol_table_stack[0]:
+            self.errors.append(f"Array '{array_decl.name}' already declared in global scope")
+            return
+        # Add array to global scope
+        self.symbol_table_stack[0][array_decl.name] = array_decl.data_type
+        for value in array_decl.value:
+            self.check_expression(value)
 
     def check_declaration(self, declaration):
         if isinstance(declaration, FunctionStatement):
@@ -52,11 +61,13 @@ class TypeChecker:
             self.check_main_function_declaration(declaration)
         elif isinstance(declaration, VariableDeclaration):
             self.check_variable_declaration(declaration)
+        elif isinstance(declaration, ArrayDeclaration):
+            self.check_array_declaration(declaration)
         else:
             self.errors.append(f"Unknown declaration type: {type(declaration)}")
 
     def check_function_declaration(self, function_decl):
-        self.symbol_table_stack.append({'immutable_vars':[]})  # New scope for function
+        self.symbol_table_stack.append({'immutable_vars': []})  # New scope for function
         self.current_function = function_decl.name
         # Add function parameters to symbol table
         if function_decl.parameters and any(function_decl.parameters):
@@ -72,7 +83,7 @@ class TypeChecker:
         self.symbol_table_stack.pop()  # End of function scope
 
     def check_main_function_declaration(self, main_func_decl):
-        self.symbol_table_stack.append({'immutable_vars':[]})  # New scope for main function
+        self.symbol_table_stack.append({'immutable_vars': []})  # New scope for main function
         self.current_function = "main"
         # Main function has no parameters
         # Check function body
@@ -114,6 +125,8 @@ class TypeChecker:
     def check_statement(self, statement):
         if isinstance(statement, VariableDeclaration):
             self.check_variable_declaration(statement)
+        elif isinstance(statement, ArrayDeclaration):
+            self.check_array_declaration(statement)
         elif isinstance(statement, IfStatement):
             self.check_if_statement(statement)
         elif isinstance(statement, WhileStatement):
@@ -122,13 +135,18 @@ class TypeChecker:
             self.check_do_while_statement(statement)
         elif isinstance(statement, AssignmentStatement):
             self.check_assignment_statement(statement)
+        elif isinstance(statement, ArrayAssignmentStatement):
+            self.check_array_assignment_statement(statement)
         elif isinstance(statement, ReturnStatement):
             self.check_return_statement(statement)
         elif isinstance(statement, ExpressionStatement):
             self.check_expression(statement.expression)
+        elif isinstance(statement, PrintStatement):
+            self.check_print_statement(statement)
+        elif isinstance(statement, ArrayAllocation):
+            pass
         else:
             self.errors.append(f"Unknown statement type: {type(statement)}")
-
 
     def check_variable_reference(self, name):
         # Check variable in the nearest scope
@@ -177,6 +195,33 @@ class TypeChecker:
         if variable_type != actual_type:
             self.errors.append(f"Type mismatch in assignment for variable '{assign_stmt.target}'")
 
+    def check_array_assignment_statement(self, assign_stmt):
+        array_type = None
+        # Check if array is declared
+        for scope in reversed(self.symbol_table_stack):
+            if assign_stmt.target in scope:
+                # Check array kind
+                if assign_stmt.target in scope.get("immutable_vars", []):
+                    self.errors.append(f"Cannot assign to constant array '{assign_stmt.target}'")
+                    return
+                array_type = scope[assign_stmt.target]
+                break
+        if not array_type:
+            self.errors.append(f"Array '{assign_stmt.target}' not declared")
+            return
+        
+        self.check_expression(assign_stmt.index)
+        self.check_expression(assign_stmt.value)
+        # Assume get_expression_type() can determine the expression's type
+        actual_type = self.get_expression_type(assign_stmt.value)
+        if actual_type == "str":
+            actual_type = "string"
+        
+        # Store result in validation_result
+        self.validation_result[f"ArrayAssignment: {assign_stmt.value}"] = actual_type
+        if array_type[0] != actual_type:
+            self.errors.append(f"Type mismatch in array assignment for array '{assign_stmt.target}'")
+
     def check_return_statement(self, return_stmt):
         if return_stmt.value:
             self.check_expression(return_stmt.value)
@@ -204,6 +249,8 @@ class TypeChecker:
             self.check_function_call(expression)
         elif isinstance(expression, VariableReference):
             self.check_variable_reference(expression.name)
+        elif isinstance(expression, ArrayAccess):
+            self.check_array_access(expression)
         else:
             self.errors.append(f"Unknown expression type: {type(expression)}")
 
@@ -220,6 +267,19 @@ class TypeChecker:
             self.errors.append(f"Function '{func_call.name}' not declared")
             return
 
+    def check_array_access(self, array_access):
+        for scope in reversed(self.symbol_table_stack):
+            if array_access.name in scope:
+                array_type = scope[array_access.name]
+                self.check_expression(array_access.index)
+                return array_type
+        self.errors.append(f"Array '{array_access.name}' not declared")
+    
+    def check_print_statement(self, print_stmt):
+        self.check_expression(print_stmt.expression)
+        # Store result in validation_result
+        self.validation_result[f"Print: {print_stmt.expression}"] = self.get_expression_type(print_stmt.expression)
+
     def are_types_compatible(self, type1, type2):
         # Implement specific rules based on your language specifications
         if type1 == type2:
@@ -230,7 +290,6 @@ class TypeChecker:
         
         return False
         
-
     def determine_common_type(self, type1, type2):
         # Implement type coercion or common type determination logic
         pass
@@ -276,6 +335,8 @@ class TypeChecker:
             # Variable not in symbol table
             self.errors.append(f"Variable '{expression.name}' not declared, no type found")
             return None
+        elif isinstance(expression, ArrayAccess):
+            return self.check_array_access(expression)
         else:
             self.errors.append(f"Unknown expression type: {type(expression)}, expression: {expression}")
         return None
