@@ -35,11 +35,11 @@ def compile_program(filename, print_tree=False):
         json_ast = json_converter.convert_ast_to_json(result)
         print(json.dumps(json_ast, indent=4))
     else:
-        # Save the LLVM IR to a file
+        # Save the LLVM IR to a file and return its path
         output_filename = os.path.splitext(filename)[0] + ".ll"
         with open(output_filename, "w") as f:
             f.write(llvm_ir)
-        print(f"LLVM IR written to {output_filename}")
+        print(output_filename)
 
 if __name__ == "__main__":
     if "--tree" in sys.argv:
