@@ -134,7 +134,7 @@ Plush supports a variety of operators for arithmetic, comparison, logical, and b
 
 ## Arrays
 
-Arrays in Plush can be declared with fixed or dynamic sizes and can be nested:
+Arrays in Plush can be declared with fixed and can be nested:
 
 ```plush
 var arr : [int] := [1, 2, 3];
