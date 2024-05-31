@@ -5,8 +5,9 @@ from grammar.grammar import parser
 from checker import semantics_check
 from gen_llvm_ir import generator as llvmir_c
 import json_converter
+import print_tree
 
-def compile_program(filename, print_tree=False):
+def compile_program(filename, print_tree_flag=False, pretty=False):
     with open(filename, "r") as f:
         source_code = f.read()
 
@@ -22,6 +23,8 @@ def compile_program(filename, print_tree=False):
     semantics_checker = semantics_check.TypeChecker()
     try:
         semantics_checker.check_program(result)
+        errors = semantics_checker.errors
+        print("Typecheck errors:", errors)
     except Exception as e:
         print(f"Semantic error: {str(e)}")
         return
@@ -30,10 +33,13 @@ def compile_program(filename, print_tree=False):
     generator = llvmir_c.LLVMIRGenerator(result)
     llvm_ir = generator.generate()
 
-    if print_tree:
+    if print_tree_flag:
         # Print the AST as JSON
         json_ast = json_converter.convert_ast_to_json(result)
         print(json.dumps(json_ast, indent=4))
+    elif pretty:
+        # Print the AST in a pretty format
+        print_tree.pretty_print(result, indent=0)
     else:
         # Save the LLVM IR to a file and return its path
         output_filename = os.path.splitext(filename)[0] + ".ll"
@@ -44,6 +50,9 @@ def compile_program(filename, print_tree=False):
 if __name__ == "__main__":
     if "--tree" in sys.argv:
         sys.argv.remove("--tree")
-        compile_program(sys.argv[1], print_tree=True)
+        compile_program(sys.argv[1], print_tree_flag=True)
+    elif "--pretty" in sys.argv:
+        sys.argv.remove("--pretty")
+        compile_program(sys.argv[1], pretty=True)
     else:
         compile_program(sys.argv[1])
