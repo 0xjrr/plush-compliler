@@ -59,7 +59,7 @@ for plush_file in "${plush_files[@]}"; do
     else
         llvm_ir_file=$(python3 compiler.py "$plush_file")
         if [ -f "$llvm_ir_file" ]; then
-            clang -c "$llvm_ir_file" -o "${llvm_ir_file%.ll}.o"
+            clang -O -c "$llvm_ir_file" -o "${llvm_ir_file%.ll}.o" -Wno-unused-command-line-argument -Wno-override-module
             object_files+=("${llvm_ir_file%.ll}.o")
             echo "Compiled $llvm_ir_file to ${llvm_ir_file%.ll}.o"
         else
@@ -71,6 +71,6 @@ done
 
 # Link all object files into a single executable
 if [ ${#object_files[@]} -gt 0 ]; then
-    clang "${object_files[@]}" -o output_executable
+    clang "${object_files[@]}" -o output_executable -lm
     echo "Linked object files to create executable 'output_executable'"
 fi
