@@ -2,26 +2,69 @@
 
 # Initialize variables
 print_tree=false
-filename=""
+files=()
+object_files=()
+plush_files=()
 
 # Parse arguments
 for arg in "$@"; do
     if [[ "$arg" == "--tree" ]]; then
         print_tree=true
     else
-        filename="$arg"
+        files+=("$arg")
     fi
 done
 
-# Ensure a filename is provided
-if [ -z "$filename" ]; then
-    echo "No PLush file specified."
+# Ensure at least one file is provided
+if [ ${#files[@]} -eq 0 ]; then
+    echo "No files specified."
     exit 1
 fi
 
-# Call the Python compiler
-if [ "$print_tree" = true ]; then
-    python3 compiler.py --tree "$filename"
-else
-    python3 compiler.py "$filename"
+# Process each file based on its extension
+for filename in "${files[@]}"; do
+    file_extension="${filename##*.}"
+    case "$file_extension" in
+        pl)
+            plush_files+=("$filename")
+            ;;
+        c)
+            # Compile C file to object file
+            clang -c "$filename" -o "${filename%.c}.o"
+            object_files+=("${filename%.c}.o")
+            echo "Compiled $filename to ${filename%.c}.o"
+            ;;
+        o)
+            # Add object file to list for linking
+            object_files+=("$filename")
+            ;;
+        ll)
+            # Compile LLVM IR file to object file
+            clang -c "$filename" -o "${filename%.ll}.o"
+            object_files+=("${filename%.ll}.o")
+            echo "Compiled $filename to ${filename%.ll}.o"
+            ;;
+        *)
+            echo "Unsupported file type: $file_extension"
+            exit 1
+            ;;
+    esac
+done
+
+#clang -O -c output.ll -o output.o -Wno-unused-command-line-argument -Wno-override-module
+#clang output.o -o output -lm           
+
+# Handle PLush files separately
+for plush_file in "${plush_files[@]}"; do
+    if [ "$print_tree" = true ]; then
+        python3 compiler.py --tree "$plush_file"
+    else
+        python3 compiler.py "$plush_file"
+    fi
+done
+
+# Link all object files into a single executable
+if [ ${#object_files[@]} -gt 0 ]; then
+    clang "${object_files[@]}" -o output_executable
+    echo "Linked object files to create executable 'output_executable'"
 fi
