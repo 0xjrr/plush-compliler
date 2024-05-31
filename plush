@@ -2,14 +2,21 @@
 
 # Initialize variables
 print_tree=false
+exec_flag=false
+out_flag=false
 files=()
 object_files=()
 plush_files=()
+output_executable="output_executable"
 
 # Parse arguments
 for arg in "$@"; do
     if [[ "$arg" == "--tree" ]]; then
         print_tree=true
+    elif [[ "$arg" == "--exec" ]]; then
+        exec_flag=true
+    elif [[ "$arg" == "--out" ]]; then
+        out_flag=true
     else
         files+=("$arg")
     fi
@@ -71,6 +78,17 @@ done
 
 # Link all object files into a single executable
 if [ ${#object_files[@]} -gt 0 ]; then
-    clang "${object_files[@]}" -o output_executable -lm
-    echo "Linked object files to create executable 'output_executable'"
+    clang "${object_files[@]}" -o "$output_executable" -lm
+    echo "Linked object files to create executable '$output_executable'"
+fi
+
+# Execute the generated executable if --exec is set
+if [ "$exec_flag" = true ]; then
+    echo "Executing $output_executable:"
+    if [ "$out_flag" = true ]; then
+        ./"$output_executable"
+        echo "Exit code: $?"
+    else
+        ./"$output_executable"
+    fi
 fi
