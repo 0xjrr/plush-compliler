@@ -1,47 +1,20 @@
-    function aux(x: int): int {
-        return 10 * x;
-    }
-    
-    function main(): int {
-        var x : int := 120;
-        var y : int := 10;
-        var z : int := 0;
-        x++;
-        y--;
-        ++x;
-        --y;
-        --x;
-        x += 1;
+val actual_min : int := -9;
+val actual_max : int := 9;
 
-        var a : int := aux(y);
-        
-        while (z < 10) {
-            x += 2;
-            z++;
-        }
+function maxRangeSquared(var mi:int, val ma:int) : int {
+	var current_max : int := mi ^ 2;
+	while mi <= ma {
+		val current_candidate : int := mi ^ 2;
+		if current_candidate > current_max {
+			current_max := current_candidate;
+		}
+        mi := mi + 1;
+	} 
+	maxRangeSquared := current_max; # This line returns the current max!
+}
 
-        do {
-            x += 2;
-            z++;
-        } while (z < 20);
 
-        while (z < 100) {
-            x += 2;
-            z++;
-            if (z % 2 == 0) {
-                continue;
-            }
-            if (z == 25) {
-                break;
-            }
-        }
-        if (x > 10) {
-            x += 10;
-        } else {
-            x -= 10;
-        }
-        y -= 1;
-        x := x + y    + (x                                          *4);
-        return x + y;
-    
-    }
+function main(val args:[string]) {
+	val result : int := maxRangeSquared(actual_min, actual_max);
+	print_int(result);
+}
