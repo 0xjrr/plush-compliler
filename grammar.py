@@ -168,8 +168,23 @@ def p_statement(p):
                  | increment_statement
                  | decrement_statement
                  | expression_statement
-                 | return_statement"""
+                 | return_statement
+                 | print_statement"""
     p[0] = p[1]
+
+def p_print_statement(p):
+    """print_statement : PRINTINT LPAREN expression RPAREN SEMICOLON
+                       | PRINTDOUBLE LPAREN expression RPAREN SEMICOLON
+                       | PRINTSTRING LPAREN expression RPAREN SEMICOLON
+                       | PRINTF LPAREN STRING COMMA expression_list RPAREN SEMICOLON"""
+    if p[1] == "print_int":
+        p[0] = ast_nodes.PrintStatement("int", p[3])
+    elif p[1] == "print_string":
+        p[0] = ast_nodes.PrintStatement("string", p[3])
+    elif p[1] == "print_double":
+        p[0] = ast_nodes.PrintStatement("double", p[3])
+    elif p[1] == "printf":
+        p[0] = ast_nodes.PrintfStatement(p[3], p[5])
 
 def p_return_statement(p):
     """return_statement : RETURN expression SEMICOLON
@@ -702,4 +717,21 @@ if __name__ == "__main__":
     # print_tree.pretty_print(result)
     json_conv = json_converter.convert_ast_to_json(result)
     print(json_conv)
+
+    print("Test 23")
+    s = """
+    function main(var args:[string]): int {
+        print_int(1);
+        print_double(1.0);
+        print_string("hello");
+        printf("hello %d %f", 1, 1.0);
+        return 0;
+    }
+    """
+    result = parser.parse(s)
+    print(result)
+    # print_tree.pretty_print(result)
+    json_conv = json_converter.convert_ast_to_json(result)
+    print(json_conv)
+
 
