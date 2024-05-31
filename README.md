@@ -1,4 +1,3 @@
-
 # PLush Compiler
 
 Welcome to the official repository for the PLush Compiler, developed as part of the compilers course. This compiler is designed to translate PLush programming language code into executable machine code. PLush is a simple, yet powerful programming language designed to teach the fundamentals of programming language design and compiler construction.
@@ -15,6 +14,7 @@ PLush is designed with simplicity and readability in mind, supporting basic prog
 - **Functions**: Functions can either be defined with a body of code or declared for external linkage.
 - **Control Structures**: Includes `if` statements with optional `else` blocks and `while` loops.
 - **Expressions**: Supports binary operators with C-like precedence, unary operators, literals (boolean, integer, float, string), and variable/index access.
+- **Imports**: Allows for modularity by importing functions from other files.
 
 ## Plush Programming Language
 
@@ -23,6 +23,7 @@ PLush is designed with simplicity and readability in mind, supporting basic prog
 Plush is a statically-typed, high-level programming language. It supports various features such as functions, variable declarations, control structures, arrays, and more. This document serves as a comprehensive guide to understanding the syntax and grammar of Plush.
 
 ### Table of Contents
+
 1. [Installation](#installation)
 2. [Basic Syntax](#basic-syntax)
    - [Comments](#comments)
@@ -34,7 +35,8 @@ Plush is a statically-typed, high-level programming language. It supports variou
 4. [Functions](#functions)
 5. [Operators](#operators)
 6. [Arrays](#arrays)
-7. [Examples](#examples)
+7. [Imports](#imports)
+8. [Examples](#examples)
 
 ## Installation
 
@@ -64,6 +66,7 @@ Comments in Plush are denoted using the `#` symbol:
 ### Data Types
 
 Plush supports several basic data types:
+
 - `int`: Integer
 - `float`: Floating-point number
 - `string`: String of characters
@@ -134,7 +137,7 @@ Plush supports a variety of operators for arithmetic, comparison, logical, and b
 
 ## Arrays
 
-Arrays in Plush can be declared with fixed and can be nested:
+Arrays in Plush can be declared with fixed sizes and can be nested:
 
 ```plush
 var arr : [int] := [1, 2, 3];
@@ -148,6 +151,53 @@ arr : [3][4]int;
 var arr_value : int := arr[2];
 arr[1] := 10;
 ```
+
+## Imports
+
+The `import` statement in Plush allows you to include functions from other files, promoting modularity and code reuse.
+
+### Syntax
+
+```plush
+import filename;
+```
+
+### Example
+
+#### File: `math_functions.pl`
+
+```plush
+function fibonacci_recursive(val n:int) : int {
+    if n <= 1 {
+        return n;
+    }
+    return fibonacci_recursive(n - 1) + fibonacci_recursive(n - 2);
+}
+```
+
+#### File: `main.pl`
+
+```plush
+import math_functions;
+
+function main(val args:[string]) {
+    val n : int := 10;
+
+    print_string("Fibonacci sequence (recursive):");
+    var i : int := 0;
+    while i <= n {
+        var fib_value : int := fibonacci_recursive(i);
+        print_int(fib_value);
+        i := i + 1;
+    }
+}
+```
+
+### How It Works
+
+1. **Define Functions in a Separate File**: Create a file (e.g., `math_functions.pl`) and define the functions you want to reuse.
+2. **Import the File**: Use the `import` statement in your main file (e.g., `main.pl`) to include the functions defined in `math_functions.pl`.
+3. **Call Imported Functions**: After importing, you can call the functions as if they were defined in the main file.
 
 ## Examples
 
@@ -227,6 +277,7 @@ Before you can use the PLush Compiler, you need to set up your environment:
    ```
 
 ## Debugging
+
 1. **Chmod**:
    ```bash
    chmod +x setup.sh
@@ -262,7 +313,9 @@ To compile, execute, and print the output of a PLush program, use:
 To compile and link multiple files (e.g., `.c`, `.o`, `.ll`, and `.pl` files) into a single executable:
 
 ```bash
-./plush file1.c file2.o file3.ll hello_world.pl
+./plush file1.c
+
+ file2.o file3.ll hello_world.pl
 ```
 
 This will compile and link all the specified files into an executable named `output_executable`.
@@ -277,4 +330,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-This compiler is developed as part of the compilers course. 
+This compiler is developed as part of the compilers course.
