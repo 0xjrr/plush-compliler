@@ -105,6 +105,25 @@ class LLVMIRGenerator:
         """Fallback method."""
         raise Exception(f"No visit_{node.__class__.__name__} method")
     
+    def visit_PrintStatement(self, node):
+        expr_type, expr_ir = self.visit(node.expression)
+        if node.print_type == "int":
+            format_str = "%d\n"
+        elif node.print_type == "string":
+            format_str = "%s\n"
+        elif node.print_type == "double":
+            format_str = "%f\n"
+        
+        self.emit_global(f'@.str{self.var_count} = private unnamed_addr constant [{len(format_str)+1} x i8] c"{format_str}\\00"')
+        format_str_ptr = f'getelementptr inbounds ([{len(format_str)+1} x i8], [{len(format_str)+1} x i8]* @.str{self.var_count}, i32 0, i32 0)'
+        self.var_count += 1
+
+        if node.print_type == "string":
+            expr_ir = expr_ir.replace("getelementptr inbounds", "getelementptr inbounds (") + ")"
+            self.emit(f"call i32 (i8*, ...) @printf(i8* {format_str_ptr}, i8* {expr_ir})")
+        else:
+            self.emit(f"call i32 (i8*, ...) @printf(i8* {format_str_ptr}, {expr_type} {expr_ir})")
+
     def visit_PrintfStatement(self, node):
         # Format string
         format_str = node.format_string
@@ -344,7 +363,7 @@ class LLVMIRGenerator:
                 self.emit(
                     f"store {self.get_type(param_type)} %{param_var}, {self.get_type(param_type)}* %{arg_name}, align 4"
                 )
-                self.add_to_symbol_table(param_name, param_type, param_var)
+                self.add_to_symbol_table(param_name, param_type, arg_name)
 
         self.visit(node.body)
         self.indentation -= 1
