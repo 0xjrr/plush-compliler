@@ -1,6 +1,6 @@
 # PLush Compiler
 
-Welcome to the official repository for the PLush Compiler, developed as part of the compilers course. This compiler is designed to translate PLush programming language code into executable machine code. PLush is a simple programming language designed to teach the fundamentals of programming language design and compiler construction.
+Welcome to my repository for the PLush Compiler, developed as part of the compilers course. This compiler is designed to translate PLush programming language code into executable machine code. PLush is a simple programming language designed to teach the fundamentals of programming language design and compiler construction. The extension `.pl` is used for PLush source files.
 
 ## Author
 
@@ -28,34 +28,23 @@ Plush is a statically-typed, high-level programming language. It supports variou
 
 ### Table of Contents
 
-1. [Installation](#installation)
-2. [Basic Syntax](#basic-syntax)
+1. [Basic Syntax](#basic-syntax)
    - [Comments](#comments)
    - [Data Types](#data-types)
    - [Variables](#variables)
-3. [Control Structures](#control-structures)
+2. [Control Structures](#control-structures)
    - [If Statements](#if-statements)
    - [Loops](#loops)
-4. [Functions](#functions)
-5. [Operators](#operators)
-6. [Arrays](#arrays)
-7. [Imports](#imports)
-8. [Examples](#examples)
-
-## Installation
-
-To use Plush, you need to have Python installed along with the PLY library. You can install PLY using pip:
-
-```bash
-pip install ply
-```
-
-Clone the Plush repository and navigate to the directory:
-
-```bash
-git clone <repository-url>
-cd plush
-```
+3. [Functions](#functions)
+4. [Operators](#operators)
+5. [Arrays](#arrays)
+6. [Imports](#imports)
+7. [Examples](#examples)
+8. [Next Steps](#next-steps)
+9. [Getting Started](#getting-started)
+10. [Installation](#installation)
+11. [Debugging](#debugging)
+12. [Usage](#usage)
 
 ## Basic Syntax
 
@@ -111,6 +100,14 @@ while (x < 10) {
 do {
     x--;
 } while (x > 0);
+
+while x < 10 {
+    x++;
+}
+
+do {
+    x--;
+} while x > 0;
 ```
 
 ## Functions
@@ -147,7 +144,9 @@ Arrays in Plush can be declared with fixed sizes and can be nested:
 var arr : [int] := [1, 2, 3];
 var arr2 : [[int]] := [[1, 2], [3, 4]];
 var arr3 : [[[int]]] := [[[1, 2], [3, 4]], [[5, 6], [7, 8]]];
-var arr4 : []double := [1.0, 1.2, 1.4];
+
+var arr4 : []int := [1, 2, 3];
+var arr5 : []double := [1.0, 1.2, 1.4];
 
 # allocation
 arr : [3][4]int;
@@ -214,7 +213,18 @@ function add(a: int, b: int): int {
 
 function main(): void {
     var result : int := add(5, 10);
-    print(result);
+    print_int(result);
+}
+```
+
+```plush
+function add(a: int, b: int): int {
+    add := a + b; # return a + b
+}
+
+function main(val args:[string]): void {
+    var result : int := add(5, 10);
+    print_int(result);
 }
 ```
 
@@ -248,7 +258,7 @@ function main(): void {
         sum += arr[i];
     }
 
-    print(sum);
+    print_int(sum);
 }
 ```
 
@@ -274,7 +284,7 @@ Before you can use the PLush Compiler, you need to set up your environment:
    ```bash
    git clone https://github.com/0xjrr/plush-compiler.git
    ```
-2. **Build the Compiler** (assuming a UNIX-like environment):
+2. **Setup** (assuming a UNIX-like environment):
    ```bash
    cd plush-compiler
    ./setup.sh
@@ -290,7 +300,7 @@ Before you can use the PLush Compiler, you need to set up your environment:
 
 ## Usage
 
-To compile a PLush program, use the following command:
+To compile a PLush program, use the following command (replace `hello_world.pl` with the `path` to your PLush program):
 
 ```bash
 ./plush hello_world.pl
@@ -300,6 +310,12 @@ To print the Abstract Syntax Tree (AST) of a PLush program, use:
 
 ```bash
 ./plush --tree hello_world.pl
+```
+
+To pretty-print the AST of a PLush program, use:
+
+```bash
+./plush --pretty hello_world.pl
 ```
 
 To compile and execute a PLush program, use:
