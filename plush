@@ -51,15 +51,21 @@ for filename in "${files[@]}"; do
     esac
 done
 
-#clang -O -c output.ll -o output.o -Wno-unused-command-line-argument -Wno-override-module
-#clang output.o -o output -lm           
-
 # Handle PLush files separately
 for plush_file in "${plush_files[@]}"; do
     if [ "$print_tree" = true ]; then
         python3 compiler.py --tree "$plush_file"
+        exit 0
     else
-        python3 compiler.py "$plush_file"
+        llvm_ir_file=$(python3 compiler.py "$plush_file")
+        if [ -f "$llvm_ir_file" ]; then
+            clang -c "$llvm_ir_file" -o "${llvm_ir_file%.ll}.o"
+            object_files+=("${llvm_ir_file%.ll}.o")
+            echo "Compiled $llvm_ir_file to ${llvm_ir_file%.ll}.o"
+        else
+            echo "Failed to generate LLVM IR for $plush_file"
+            exit 1
+        fi
     fi
 done
 
