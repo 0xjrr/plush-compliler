@@ -1,5 +1,4 @@
 
-
 # PLush Compiler
 
 Welcome to the official repository for the PLush Compiler, developed as part of the compilers course. This compiler is designed to translate PLush programming language code into executable machine code. PLush is a simple, yet powerful programming language designed to teach the fundamentals of programming language design and compiler construction.
@@ -17,13 +16,13 @@ PLush is designed with simplicity and readability in mind, supporting basic prog
 - **Control Structures**: Includes `if` statements with optional `else` blocks and `while` loops.
 - **Expressions**: Supports binary operators with C-like precedence, unary operators, literals (boolean, integer, float, string), and variable/index access.
 
-# Plush Programming Language
+## Plush Programming Language
 
-## Overview
+### Overview
 
 Plush is a statically-typed, high-level programming language. It supports various features such as functions, variable declarations, control structures, arrays, and more. This document serves as a comprehensive guide to understanding the syntax and grammar of Plush.
 
-## Table of Contents
+### Table of Contents
 1. [Installation](#installation)
 2. [Basic Syntax](#basic-syntax)
    - [Comments](#comments)
@@ -127,10 +126,10 @@ function compute(x: int, y: float): float {
 
 Plush supports a variety of operators for arithmetic, comparison, logical, and bitwise operations:
 
-- Arithmetic: `+`, `-`, `*`, `/`, `%`
+- Arithmetic: `+`, `-`, `*`, `/`, `%`, `^`
 - Comparison: `>`, `<`, `>=`, `<=`, `==`, `!=`
 - Logical: `and`, `or`, `not`
-- Bitwise: `&`, `|`, `^`, `~`, `<<`, `>>`
+- Bitwise: `&`, `|`, `~`, `<<`, `>>`
 - Increment and Decrement: `++`, `--`
 
 ## Arrays
@@ -203,7 +202,7 @@ This guide provides a basic understanding of the Plush programming language. For
 
 To get started with the PLush Compiler, clone this repository to your local machine:
 
-```
+```bash
 git clone https://github.com/0xjrr/plush-compiler.git
 ```
 
@@ -214,24 +213,55 @@ Ensure you have the necessary environment to compile and run the compiler. Instr
 Before you can use the PLush Compiler, you need to set up your environment:
 
 1. **Clone the Repository**:
-   ```
+   ```bash
    git clone https://github.com/0xjrr/plush-compiler.git
    ```
 2. **Build the Compiler** (assuming a UNIX-like environment):
-   ```
+   ```bash
    cd plush-compiler
-   #TODO
+   ./setup.sh
+   ```
+
+## Debugging
+1. **Chmod**:
+   ```bash
+   chmod +x setup.sh
+   chmod +x plush
    ```
 
 ## Usage
 
 To compile a PLush program, use the following command:
 
-```
- #TODO
+```bash
+./plush hello_world.pl
 ```
 
-This will generate an executable or an intermediate representation, depending on the build configuration.
+To print the Abstract Syntax Tree (AST) of a PLush program, use:
+
+```bash
+./plush --tree hello_world.pl
+```
+
+To compile and execute a PLush program, use:
+
+```bash
+./plush --exec hello_world.pl
+```
+
+To compile, execute, and print the output of a PLush program, use:
+
+```bash
+./plush --exec --out hello_world.pl
+```
+
+To compile and link multiple files (e.g., `.c`, `.o`, `.ll`, and `.pl` files) into a single executable:
+
+```bash
+./plush file1.c file2.o file3.ll hello_world.pl
+```
+
+This will compile and link all the specified files into an executable named `output_executable`.
 
 ## Contributing
 
@@ -243,4 +273,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-This compiler is developed as part of the compilers course. Special thanks to the course instructors and assistants for their guidance and support throughout the development process.
+This compiler is developed as part of the compilers course. 
