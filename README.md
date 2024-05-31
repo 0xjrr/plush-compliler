@@ -1,6 +1,10 @@
 # PLush Compiler
 
-Welcome to the official repository for the PLush Compiler, developed as part of the compilers course. This compiler is designed to translate PLush programming language code into executable machine code. PLush is a simple, yet powerful programming language designed to teach the fundamentals of programming language design and compiler construction.
+Welcome to the official repository for the PLush Compiler, developed as part of the compilers course. This compiler is designed to translate PLush programming language code into executable machine code. PLush is a simple programming language designed to teach the fundamentals of programming language design and compiler construction.
+
+## Author
+
+José Ricardo Ribeiro, Student at Faculty of Sciences of the University of Lisbon, completed this project as part of the Compilers course 2024.
 
 ## Language Description
 
