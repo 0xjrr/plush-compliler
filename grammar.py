@@ -339,6 +339,7 @@ parser = yacc.yacc(debug=True, debugfile="parser.out")
 # Example usage
 if __name__ == "__main__":
     import print_tree
+    import json_converter
     print("Running parser tests...")
 
     print("Test 1")
@@ -350,7 +351,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(test_input)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
 
     print("Test 2")
     s = """
@@ -373,7 +374,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
 
     print("Test 3")
     s = """
@@ -388,7 +389,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
 
     print("Test 4")
     s = """
@@ -400,7 +401,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
 
     print("Test 5")
     s = """
@@ -417,7 +418,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
 
     print("Test 6")
 
@@ -428,7 +429,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
 
     print("Test 7")
     s = """
@@ -442,7 +443,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
 
     print("Test 8")
     s = """
@@ -454,7 +455,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
 
     print("Test 9")
     s = """
@@ -477,7 +478,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
 
     print("Test 10")
     s = """
@@ -494,7 +495,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
 
     print("Test 11")
     s = """
@@ -512,7 +513,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
 
     print("Test 12")
     s = """
@@ -527,7 +528,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
 
     print("Test PlusPlus, MinusMinus, Increment, Decrement")
     print("Test 13")
@@ -546,7 +547,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
 
 
     print("Test 14")
@@ -558,7 +559,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
 
     print("Test 15")
     s = """
@@ -581,7 +582,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
 
     print("Test break and continue")
     print("Test 16")
@@ -601,7 +602,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
 
     print("Test 17")
     s = """
@@ -623,7 +624,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
 
     print("Test 18")
     s = """
@@ -643,7 +644,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
 
     print("Test 19")
     s = """
@@ -656,7 +657,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
 
     print("Test 20")
     s = """
@@ -672,7 +673,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
 
     print("Test 21")
     s = """
@@ -686,7 +687,9 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
+    json_conv = json_converter.convert_ast_to_json(result)
+    print(json_conv)
 
     print("Test 22")
     s = """
@@ -696,5 +699,7 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
-    print_tree.pretty_print(result)
+    # print_tree.pretty_print(result)
+    json_conv = json_converter.convert_ast_to_json(result)
+    print(json_conv)
 
