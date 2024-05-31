@@ -24,7 +24,28 @@ class FunctionStatement(ASTNode):
     name: str
     parameters: List['Parameter']
     return_type: str
-    body: 'StatementBlock'
+    body: 'StatementBlock'|List['Statement']
+
+    def __post_init__(self):
+        self.add_self_return()
+    
+    def add_self_return(self):
+        if self.return_type != 'void':
+            self.body.insert(0, VariableDeclaration('var', self.name, self.return_type, self.calculate_return_value()))
+            self.body.append(ReturnStatement(VariableReference(self.name)))
+
+    def calculate_return_value(self):
+        if self.return_type == 'int':
+            return Literal(0)
+        if self.return_type == 'float':
+            return Literal(0.0)
+        if self.return_type == 'double':
+            return Literal(0.0)
+        if self.return_type == 'string':
+            return Literal('')
+        if self.return_type == 'bool':
+            return Literal(False)
+        return None
 
 @dataclass
 class MainFunctionStatement(ASTNode):
