@@ -104,6 +104,19 @@ class LLVMIRGenerator:
     def generic_visit(self, node):
         """Fallback method."""
         raise Exception(f"No visit_{node.__class__.__name__} method")
+    
+    def visit_PrintfStatement(self, node):
+        # Format string
+        format_str = node.format_string
+        self.emit_global(f'@.str{self.var_count} = private unnamed_addr constant [{len(format_str)+1} x i8] c"{format_str}\\00"')
+        format_str_ptr = f'getelementptr inbounds ([{len(format_str)+1} x i8], [{len(format_str)+1} x i8]* @.str{self.var_count}, i32 0, i32 0)'
+        self.var_count += 1
+        
+        # Arguments
+        args = [self.visit(arg) for arg in node.arguments]
+        args_ir = ", ".join(f"{arg_type} {arg_ir}" for arg_type, arg_ir in args)
+        
+        self.emit(f"call i32 (i8*, ...) @printf(i8* {format_str_ptr}, {args_ir})")
 
     def visit_VariableDeclaration(self, node):
         type_ir = self.get_type(node.data_type)
