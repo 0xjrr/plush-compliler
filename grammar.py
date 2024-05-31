@@ -114,9 +114,14 @@ def p_function_declaration(p):
 
 def p_function_statement(p):
     """function_statement : FUNCTION IDENTIFIER LPAREN parameter_list RPAREN COLON TYPE statement_block
-                          | FUNCTION MAIN LPAREN parameter_list RPAREN COLON TYPE statement_block"""
+                          | FUNCTION MAIN LPAREN parameter_list RPAREN COLON TYPE statement_block
+                          | FUNCTION MAIN LPAREN VAL ARGSTRING RPAREN COLON TYPE statement_block
+                          | FUNCTION MAIN LPAREN VAR ARGSTRING RPAREN COLON TYPE statement_block"""
     if p[2] == 'main':
-        p[0] = ast_nodes.MainFunctionStatement(p[4], p[7], p[8])
+        if p[4] == 'val' or p[4] == 'var':
+            p[0] = ast_nodes.MainFunctionStatement([None], p[8], p[9])
+        else:
+            p[0] = ast_nodes.MainFunctionStatement(p[4], p[7], p[8])
     else:
         p[0] = ast_nodes.FunctionStatement(p[2], p[4], p[7], p[8])
 
@@ -683,5 +688,13 @@ if __name__ == "__main__":
     print(result)
     print_tree.pretty_print(result)
 
-
+    print("Test 22")
+    s = """
+    function main(val args:[string]): int {
+        return 0;
+    }
+    """
+    result = parser.parse(s)
+    print(result)
+    print_tree.pretty_print(result)
 

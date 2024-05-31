@@ -66,6 +66,8 @@ tokens = [
     # Main and return
     "MAIN",
     "RETURN",
+    # Argstring
+    "ARGSTRING",
 ]
 
 t_PLUS = r"\+"
@@ -112,6 +114,12 @@ t_MINUSMINUS = r"--"
 t_INCREMENT = r"\+="
 t_DECREMENT = r"-="
 
+# Argstring
+def t_ARGSTRING(t):
+    r"args:\[string\]"
+    t.type = "ARGSTRING"
+    return t
+
 # Keywords
 reserved = {
     "val": "VAL",
@@ -133,6 +141,7 @@ reserved = {
     "bool": "TYPE",
     "main": "MAIN",
     "return": "RETURN",
+    "import": "IMPORT",
 }
 
 
