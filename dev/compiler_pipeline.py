@@ -1,6 +1,6 @@
 import ast_nodes
 from grammar import parser
-import semantics_check
+import checker
 import llvmir_compiler
 import json_converter
 import os
@@ -11,8 +11,8 @@ if __name__ == "__main__":
     
     result = parser.parse(s)
     print(result)
-    semantics_checker = semantics_check.TypeChecker()
-    semantics_checker.check_program(result)
+    analyzer = checker.Analyzer()
+    analyzer.check_program(result)
     generator = llvmir_compiler.LLVMIRGenerator(result)
     llvm_ir = generator.generate()
     json_ast = json_converter.convert_ast_to_json(result)

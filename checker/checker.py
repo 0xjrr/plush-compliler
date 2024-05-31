@@ -4,7 +4,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from tree.ast_nodes import *
-class TypeChecker:
+class Analyzer:
     def __init__(self):
         self.symbol_table_stack = [{'immutable_vars': []}]  # A stack of dictionaries for scoping
         self.functions = {}  # Function name to function return type
@@ -349,7 +349,7 @@ if __name__ == "__main__":
 
     print("Global variables test cases")
     print("Test 0")
-    type_checker = TypeChecker()
+    type_checker = Analyzer()
     test_input = """
     var x : int;
     var x : float;
@@ -368,7 +368,7 @@ if __name__ == "__main__":
 
     print("Type checking test cases")
     print("Test 1")
-    type_checker = TypeChecker()
+    type_checker = Analyzer()
 
     test_input = """
     function compute(x: int, y: float): float {
@@ -385,7 +385,7 @@ if __name__ == "__main__":
     print("Typecheck results:\n", json.dumps(type_checker.validation_result, indent=4))
 
     print("Test 2")
-    type_checker = TypeChecker()
+    type_checker = Analyzer()
     s = """
     function test(x: int, y: float): string {
         var z : string := "hello";
@@ -418,7 +418,7 @@ if __name__ == "__main__":
 
 
     print("Test 3")
-    type_checker = TypeChecker()
+    type_checker = Analyzer()
     s = """
     function test(x: int, y: float): string {
         var z : string := "hello";
@@ -440,7 +440,7 @@ if __name__ == "__main__":
     print("Error tests:\n")
 
     print("Test 4")
-    type_checker = TypeChecker()
+    type_checker = Analyzer()
     s = """
     function test(x: int, y: float): float {
         a :=   2 * x + y;
@@ -458,7 +458,7 @@ if __name__ == "__main__":
     print(json.dumps(type_checker.validation_result, indent=4))
 
     print("Test 5")
-    type_checker = TypeChecker()
+    type_checker = Analyzer()
     s = """
     function test(x: int, y: float): float {
         a := 1;
@@ -480,7 +480,7 @@ if __name__ == "__main__":
 
     print("Fully Correct Program")
     print("Test 6")
-    type_checker = TypeChecker()
+    type_checker = Analyzer()
     s = """
     val x : int := 1;
     var y : float := 1.2;
@@ -519,7 +519,7 @@ if __name__ == "__main__":
     print("Typecheck results:\n", json.dumps(type_checker.validation_result, indent=4))
 
     print("Test 7")
-    type_checker = TypeChecker()
+    type_checker = Analyzer()
     s = """
     val x : int := 1;
     function main(): void {
@@ -543,7 +543,7 @@ if __name__ == "__main__":
     print("Typecheck results:\n", json.dumps(type_checker.validation_result, indent=4))
 
     print("Test 8")
-    type_checker = TypeChecker()
+    type_checker = Analyzer()
     s = """
     val x : int := 1;
     val y : float := 2.0;
@@ -572,7 +572,7 @@ if __name__ == "__main__":
 
 
     print("Test 9")
-    type_checker = TypeChecker()
+    type_checker = Analyzer()
     # int a = 10;
 
     # double test(int x) {

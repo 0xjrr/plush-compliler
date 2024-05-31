@@ -2,7 +2,7 @@ import sys
 import os
 import json
 from grammar.grammar import parser
-from checker import semantics_check
+from checker import checker
 from gen_llvm_ir import generator as llvmir_c
 import json_converter
 import print_tree
@@ -20,10 +20,10 @@ def compile_program(filename, print_tree_flag=False, pretty=False):
         return
 
     # Perform semantic checking
-    semantics_checker = semantics_check.TypeChecker()
+    analyzer = checker.Analyzer()
     try:
-        semantics_checker.check_program(result)
-        errors = semantics_checker.errors
+        analyzer.check_program(result)
+        errors = analyzer.errors
         print("Typecheck errors:", errors)
     except Exception as e:
         print(f"Semantic error: {str(e)}")
