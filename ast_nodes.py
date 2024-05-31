@@ -147,6 +147,16 @@ class FunctionCall(ASTNode):
     arguments: List['Expression']
 
 @dataclass
+class PrintStatement:
+    print_type: str
+    expression: 'Expression'
+
+@dataclass
+class PrintfStatement:
+    format_string: str
+    arguments: List['Expression']
+    
+@dataclass
 class ExpressionStatement(ASTNode):
     expression: 'Expression'
 
