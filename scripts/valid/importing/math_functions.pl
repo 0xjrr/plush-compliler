@@ -1,0 +1,6 @@
+function fibonacci_recursive(val n:int) : int {
+    if n <= 1 {
+        return n;
+    }
+    return fibonacci_recursive(n - 1) + fibonacci_recursive(n - 2);
+}

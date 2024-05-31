@@ -5,6 +5,7 @@ print_tree=false
 exec_flag=false
 out_flag=false
 pretty_flag=false
+typecheck_print_flag=false
 files=()
 object_files=()
 plush_files=()
@@ -69,8 +70,13 @@ for plush_file in "${plush_files[@]}"; do
     elif [ "$pretty_flag" = true ]; then
         python3 compiler.py --pretty "$plush_file"
         exit 0
+    elif [ "$typecheck_print_flag" = true ]; then
+        python3 compiler.py --typecheck "$plush_file"
+        exit 0
     else
         llvm_ir_file=$(python3 compiler.py "$plush_file")
+        echo "Generated LLVM IR for $plush_file"
+        echo "$llvm_ir_file"
         if [ -f "$llvm_ir_file" ]; then
             clang -O -c "$llvm_ir_file" -o "${llvm_ir_file%.ll}.o" -Wno-unused-command-line-argument -Wno-override-module
             object_files+=("${llvm_ir_file%.ll}.o")

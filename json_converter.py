@@ -20,5 +20,5 @@ def dataclass_to_dict(obj: Any) -> Any:
 
 
 def convert_ast_to_json(ast: ASTNode) -> str:
-    return json.dumps(dataclass_to_dict(ast), indent=4)
+    return json.dumps(dataclass_to_dict(ast), indent=2)
 

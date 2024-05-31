@@ -24,13 +24,36 @@ precedence = (
 
 # Update the program structure to include a list of GlobalVariables
 def p_program(p):
-    """program : global_declaration_list declaration_list
+    """program : import_list global_declaration_list declaration_list
+               | import_list declaration_list
+               | global_declaration_list declaration_list
                | declaration_list"""
     # Wrap global declarations in a GlobalVariables object
-    if len(p) == 3:
-        p[0] = ast_nodes.Program(global_variables=ast_nodes.GlobalVariables(declarations=p[1]), declarations=p[2])
+    if len(p) == 4:
+        # program has import_list, global_declaration_list, and declaration_list
+        p[0] = ast_nodes.Program(global_variables=ast_nodes.GlobalVariables(declarations=p[2]), declarations=p[3], imports=p[1])
+    elif len(p) == 3:
+        if isinstance(p[1], list):  # import_list is expected to be a list of imports
+            # program has import_list and declaration_list
+            p[0] = ast_nodes.Program(global_variables=ast_nodes.GlobalVariables(declarations=[]), declarations=p[2], imports=p[1])
+        else:
+            # program has global_declaration_list and declaration_list
+            p[0] = ast_nodes.Program(global_variables=ast_nodes.GlobalVariables(declarations=p[1]), declarations=p[2], imports=[])
     else:
-        p[0] = ast_nodes.Program(global_variables=ast_nodes.GlobalVariables(declarations=[]), declarations=p[1])
+        # program has only declaration_list
+        p[0] = ast_nodes.Program(global_variables=ast_nodes.GlobalVariables(declarations=[]), declarations=p[1], imports=[])
+
+def p_import_list(p):
+    """import_list : import_list import_statement
+                   | import_statement"""
+    if len(p) == 3:
+        p[0] = p[1] + [p[2]]
+    else:
+        p[0] = [p[1]]
+
+def p_import_statement(p):
+    """import_statement : IMPORT IDENTIFIER SEMICOLON"""
+    p[0] = p[2].strip('"')
 
 def p_global_declaration_list(p):
     """global_declaration_list : global_declaration_list global_declaration
@@ -120,6 +143,7 @@ def p_function_declaration(p):
 
 def p_function_statement(p):
     """function_statement : FUNCTION IDENTIFIER LPAREN parameter_list RPAREN COLON TYPE statement_block
+                          | FUNCTION IDENTIFIER LPAREN parameter_list RPAREN statement_block
                           | FUNCTION MAIN LPAREN parameter_list RPAREN COLON TYPE statement_block
                           | FUNCTION MAIN LPAREN VAL ARGSTRING RPAREN COLON TYPE statement_block
                           | FUNCTION MAIN LPAREN VAR ARGSTRING RPAREN COLON TYPE statement_block
@@ -138,7 +162,10 @@ def p_function_statement(p):
             else:
                 p[0] = ast_nodes.MainFunctionStatement(p[4], "void", p[6])
     else:
-        p[0] = ast_nodes.FunctionStatement(p[2], p[4], p[7], p[8])
+        if p[6] == ":" :
+            p[0] = ast_nodes.FunctionStatement(p[2], p[4], p[7], p[8])
+        else:
+            p[0] = ast_nodes.FunctionStatement(p[2], p[4], "void", p[6])
 
 def p_parameter_list(p):
     """parameter_list : parameter_list COMMA parameter
@@ -786,5 +813,17 @@ if __name__ == "__main__":
     """
     result = parser.parse(s)
     print(result)
+
+    print("Test 25")
+    s = """
+    import test1;
+    import test2;
+    function main(): int {
+        return 0;
+    }
+    """
+    result = parser.parse(s)
+    print(result)
+
 
 

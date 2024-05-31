@@ -18,6 +18,7 @@ class ASTNode:
 class Program(ASTNode):
     global_variables: 'GlobalVariables'
     declarations: List[ASTNode]
+    imports: Optional[List[str]]
 
 @dataclass
 class FunctionStatement(ASTNode):
