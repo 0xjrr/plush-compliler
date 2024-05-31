@@ -323,10 +323,14 @@ class LLVMIRGenerator:
         arg_list = [f"{arg_type} {arg_val}" for arg_type, arg_val in arg_results]
         result_var = f"%tmp{self.temp_count}"
         self.temp_count += 1
-        self.emit(
-            f"{result_var} = call {self.get_type(function_return_type)} @{node.name}({', '.join(arg_list)})"
-        )
-        return (self.get_type(function_return_type), result_var)
+        _function_return_type = self.get_type(function_return_type)
+        if function_return_type == "void":
+            self.emit(f"call {_function_return_type} @{node.name}({', '.join(arg_list)})")
+        else:
+            self.emit(
+                f"{result_var} = call {_function_return_type} @{node.name}({', '.join(arg_list)})"
+            )
+        return (_function_return_type, result_var)
 
     def function_statement(self, node, function_name):
         self.push_symbol_table()  # New scope for function
