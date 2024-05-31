@@ -140,6 +140,10 @@ Arrays in Plush can be declared with fixed and can be nested:
 var arr : [int] := [1, 2, 3];
 var arr2 : [[int]] := [[1, 2], [3, 4]];
 var arr3 : [[[int]]] := [[[1, 2], [3, 4]], [[5, 6], [7, 8]]];
+var arr4 : []double := [1.0, 1.2, 1.4];
+
+# allocation
+arr : [3][4]int;
 
 var arr_value : int := arr[2];
 arr[1] := 10;
