@@ -1,7 +1,7 @@
 import json
 from dataclasses import asdict, is_dataclass, fields
 from typing import Any
-from ast_nodes import *
+from tree.ast_nodes import *
 
 def dataclass_to_dict(obj: Any) -> Any:
     if is_dataclass(obj):

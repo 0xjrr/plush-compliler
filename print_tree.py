@@ -1,4 +1,4 @@
-import ast_nodes
+from tree import ast_nodes
 
 def pretty_print(node, indent=0):
     """

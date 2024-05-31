@@ -1,9 +1,9 @@
 import sys
 import os
 import json
-from grammar import parser
-import semantics_check
-import llvmir_compiler
+from grammar.grammar import parser
+from checker import semantics_check
+from gen_llvm_ir import generator as llvmir_c
 import json_converter
 
 def compile_program(filename, print_tree=False):
@@ -27,7 +27,7 @@ def compile_program(filename, print_tree=False):
         return
 
     # Generate LLVM IR
-    generator = llvmir_compiler.LLVMIRGenerator(result)
+    generator = llvmir_c.LLVMIRGenerator(result)
     llvm_ir = generator.generate()
 
     if print_tree:
