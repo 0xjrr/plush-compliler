@@ -4,6 +4,7 @@
 print_tree=false
 exec_flag=false
 out_flag=false
+pretty_flag=false
 files=()
 object_files=()
 plush_files=()
@@ -17,6 +18,8 @@ for arg in "$@"; do
         exec_flag=true
     elif [[ "$arg" == "--out" ]]; then
         out_flag=true
+    elif [[ "$arg" == "--pretty" ]]; then
+        pretty_flag=true
     else
         files+=("$arg")
     fi
@@ -62,6 +65,9 @@ done
 for plush_file in "${plush_files[@]}"; do
     if [ "$print_tree" = true ]; then
         python3 compiler.py --tree "$plush_file"
+        exit 0
+    elif [ "$pretty_flag" = true ]; then
+        python3 compiler.py --pretty "$plush_file"
         exit 0
     else
         llvm_ir_file=$(python3 compiler.py "$plush_file")
