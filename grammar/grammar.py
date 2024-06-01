@@ -33,7 +33,7 @@ def p_program(p):
         # program has import_list, global_declaration_list, and declaration_list
         p[0] = ast_nodes.Program(global_variables=ast_nodes.GlobalVariables(declarations=p[2]), declarations=p[3], imports=p[1])
     elif len(p) == 3:
-        if isinstance(p[1], list):  # import_list is expected to be a list of imports
+        if isinstance(p[1], list) and p.slice[1].type == 'import_list':  # import_list is expected to be a list of imports
             # program has import_list and declaration_list
             p[0] = ast_nodes.Program(global_variables=ast_nodes.GlobalVariables(declarations=[]), declarations=p[2], imports=p[1])
         else:
