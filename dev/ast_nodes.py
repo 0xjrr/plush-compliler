@@ -24,7 +24,7 @@ class FunctionStatement(ASTNode):
     name: str
     parameters: List['Parameter']
     return_type: str
-    body: 'StatementBlock'|List['Statement']
+    body: Union['StatementBlock', List[Statement]]
 
     def __post_init__(self):
         self.add_self_return()
