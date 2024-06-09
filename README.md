@@ -253,9 +253,11 @@ function main(): void {
 function main(): void {
     var arr : [int] := [1, 2, 3, 4, 5];
     var sum : int := 0;
+    var i : int := 0;
 
-    for (var i : int := 0; i < len(arr); i++) {
+    while i < 5 {
         sum += arr[i];
+        i++;
     }
 
     print_int(sum);
